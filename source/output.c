@@ -58,7 +58,6 @@ int output_total_cl_at_l(
     
     return _SUCCESS_;
     
-}
 
 /**
  * This routine writes the output in files.
