@@ -88,6 +88,13 @@ class_precision_parameter(tol_shooting_deltaF,double,1.e-6)
  * Relative tolerance of root x during shooting (only 1D case)
  */
 class_precision_parameter(tol_shooting_deltax_rel,double,1.e-5)
+/**
+ * Threshold value of M_ncdm=T_ncdm/m_ncdm above wich a species is
+ * considered a "non-free-streaming" when comuting the parameter
+ * Omega0_nfsm, relevant for HyRec and non-linear correction
+ * algorithms
+ */
+class_precision_parameter(M_nfsm_threshold,double,1.e4)
 /*
  * Currently unused parameter.
  */
@@ -473,7 +480,7 @@ class_precision_parameter(selection_tophat_edge,double,0.1) /**< controls how sm
 
 class_precision_parameter(sigma_k_per_decade,double,80.) /**< logarithmic stepsize controlling the precision of integrals for sigma(R,k) and similar quantitites */
 
-class_precision_parameter(fourier_min_k_max,double,20.0) /**< when
+class_precision_parameter(nonlinear_min_k_max,double,5.0) /**< when
                                using an algorithm to compute nonlinear
                                corrections, like halofit or hmcode,
                                k_max must be at least equal to this
@@ -486,8 +493,6 @@ class_precision_parameter(fourier_min_k_max,double,20.0) /**< when
 /** parameters relevant for HALOFIT computation */
 
 class_precision_parameter(halofit_min_k_nonlinear,double,1.0e-4)/**< value of k in 1/Mpc below which non-linear corrections will be neglected */
-
-class_precision_parameter(halofit_min_k_max,double,5.0) /**< DEPRECATED: should use instead fourier_min_k_max */
 
 class_precision_parameter(halofit_k_per_decade,double,80.0) /**< halofit needs to evalute integrals
                                (linear power spectrum times some
@@ -516,8 +521,6 @@ class_precision_parameter(pk_eq_tol,double,1.0e-7) /**< Tolerance on the pk_eq m
 class_precision_parameter(hmcode_max_k_extra,double,1.e6) /**< parameter specifying the maximum k value for
                                                              the extrapolation of the linear power spectrum
                                                              (needed for the sigma computation) */
-
-class_precision_parameter(hmcode_min_k_max,double,5.)   /**< DEPRECATED: should use instead fourier_min_k_max */
 
 class_precision_parameter(hmcode_tol_sigma,double,1.e-6) /**< tolerance required on sigma(R) when matching the
                                                             condition sigma(R_nl)=1, which defines the wavenumber

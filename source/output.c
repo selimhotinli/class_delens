@@ -38,52 +38,22 @@ int output_total_cl_at_l(
                    ple->error_message,
                    pop->error_message);
     }
-    else {
-        
-        class_alloc(cl_md_ic,
-                    phr->md_size*sizeof(double *),
-                    pop->error_message);
-        
-        class_alloc(cl_md,
-                    phr->md_size*sizeof(double *),
-                    pop->error_message);
-        
-        for (index_md = 0; index_md < phr->md_size; index_md++) {
-            
-            if (phr->md_size > 1)
-                
-                class_alloc(cl_md[index_md],
-                            phr->ct_size*sizeof(double),
-                            ple->error_message);
-            
-            if (phr->ic_size[index_md] > 1)
-                
-                class_alloc(cl_md_ic[index_md],
-                            phr->ic_ic_size[index_md]*phr->ct_size*sizeof(double),
-                            ple->error_message);
-        }
-        
-        class_call(harmonic_cl_at_l(phr,
-                                    (double)l,
-                                    cl,
-                                    cl_md,
-                                    cl_md_ic),
-                   phr->error_message,
-                   pop->error_message);
-        
-        for (index_md = 0; index_md < phr->md_size; index_md++) {
-            
-            if (phr->md_size > 1)
-                free(cl_md[index_md]);
-            
-            if (phr->ic_size[index_md] > 1)
-                free(cl_md_ic[index_md]);
-            
-        }
-        
-        free(cl_md_ic);
-        free(cl_md);
-        
+    class_call(harmonic_cl_at_l(phr,
+                                (double)l,
+                                cl,
+                                cl_md,
+                                cl_md_ic),
+               phr->error_message,
+               pop->error_message);
+
+    for (index_md = 0; index_md < phr->md_size; index_md++) {
+
+      if (phr->md_size > 1)
+        free(cl_md[index_md]);
+
+      if (phr->ic_size[index_md] > 1)
+        free(cl_md_ic[index_md]);
+
     }
     
     return _SUCCESS_;
@@ -1646,11 +1616,58 @@ int output_pk(
             else
                 sprintf(type_suffix,"pk_nl");
         }
-        if ((pfo->has_pk_cb == _TRUE_) && (index_pk == pfo->index_pk_cb)) {
-            if (pk_output == pk_linear)
-                sprintf(type_suffix,"pk_cb");
-            else
-                sprintf(type_suffix,"pk_cb_nl");
+      }
+
+      /** - third, compute P(k) for each k */
+
+      class_call(fourier_pk_at_z(pba,
+                                 pfo,
+                                 logarithmic,
+                                 pk_output,
+                                 pop->z_pk[index_z],
+                                 index_pk,
+                                 ln_pk,
+                                 ln_pk_ic
+                                 ),
+                 pfo->error_message,
+                 pop->error_message);
+
+      /** - fourth, write in files */
+
+      for (index_k=0; index_k<pfo->k_size; index_k++) {
+
+        class_call(output_one_line_of_pk(out_pk,
+                                         exp(pfo->ln_k[index_k])/pba->h,
+                                         exp(ln_pk[index_k])*pow(pba->h,3)
+                                         ),
+                   pop->error_message,
+                   pop->error_message);
+
+        if (do_ic == _TRUE_) {
+
+          for (index_ic1_ic2 = 0; index_ic1_ic2 < pfo->ic_ic_size; index_ic1_ic2++) {
+
+            if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
+
+              class_call(output_one_line_of_pk(out_pk_ic[index_ic1_ic2],
+                                               exp(pfo->ln_k[index_k])/pba->h,
+                                               exp(ln_pk_ic[index_k * pfo->ic_ic_size + index_ic1_ic2])*pow(pba->h,3)),
+                         pop->error_message,
+                         pop->error_message);
+            }
+          }
+        }
+      } /* end loop over k */
+
+      /** - fifth, close files */
+
+      fclose(out_pk);
+
+      if (do_ic == _TRUE_) {
+        for (index_ic1_ic2 = 0; index_ic1_ic2 < pfo->ic_ic_size; index_ic1_ic2++) {
+          if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
+            fclose(out_pk_ic[index_ic1_ic2]);
+          }
         }
         
         /** - loop over z */
@@ -1863,44 +1880,76 @@ int output_tk(
               struct perturbations * ppt,
               struct output * pop
               ) {
-    
-    /** Summary: */
-    
-    /** - define local variables */
-    char titles[_MAXTITLESTRINGLENGTH_]={0};
-    double * data;
-    int size_data, number_of_titles;
-    
-    FILE * tkfile;
-    
-    int index_md;
-    int index_ic;
-    int index_z;
-    
-    double z;
-    
-    FileName file_name;
-    char redshift_suffix[7]; // 7 is enough to write "z%d_" as long as there are at most 10'000 bins
-    char first_line[_LINE_LENGTH_MAX_];
-    char ic_suffix[4];   // 4 is enough to write "ad", "bi", "cdi", "nid", "niv", ...
-    
-    
-    index_md=ppt->index_md_scalars;
-    
-    if (pop->output_format == camb_format) {
-        
-        class_test(pba->N_ncdm>1,
-                   pop->error_message,
-                   "you wish to output the transfer functions in CMBFAST/CAMB format but you have more than one non-cold dark matter (ncdm) species. The two are not compatible (since CMBFAST/CAMB only have one ncdm species): switch to CLASS output format or keep only on ncdm species");
-        
-        class_test(ppt->has_velocity_transfers == _TRUE_,
-                   pop->error_message,
-                   "you wish to output the transfer functions in CMBFAST/CAMB format, but you requested velocity transfer functions. The two are not compatible (since CMBFAST/CAMB do not compute velocity transfer functions): switch to CLASS output format, or ask only for density transfer function");
-    }
-    
-    
-    class_call(perturbations_output_titles(pba,ppt,pop->output_format,titles),
-               pba->error_message,
+
+
+  /** Summary: */
+
+  /** - define local variables */
+  char titles[_MAXTITLESTRINGLENGTH_]={0};
+  double * data;
+  int size_data, number_of_titles;
+
+  FILE * tkfile;
+
+  int index_md;
+  int index_ic;
+  int index_z;
+
+  double z;
+
+  FileName file_name;
+  char redshift_suffix[7]; // 7 is enough to write "z%d_" as long as there are at most 10'000 bins
+  char first_line[_LINE_LENGTH_MAX_];
+  char ic_suffix[_SUFFIXNAMESIZE_];   // 4 is enough to write "ad", "bi", "cdi", "nid", "niv", ...
+
+
+  index_md=ppt->index_md_scalars;
+
+  if (pop->output_format == camb_format) {
+
+    class_test(pba->N_ncdm>1,
+               pop->error_message,
+               "you wish to output the transfer functions in CMBFAST/CAMB format but you have more than one non-cold dark matter (ncdm) species. The two are not compatible (since CMBFAST/CAMB only have one ncdm species): switch to CLASS output format or keep only on ncdm species");
+
+    class_test(ppt->has_velocity_transfers == _TRUE_,
+               pop->error_message,
+               "you wish to output the transfer functions in CMBFAST/CAMB format, but you requested velocity transfer functions. The two are not compatible (since CMBFAST/CAMB do not compute velocity transfer functions): switch to CLASS output format, or ask only for density transfer function");
+  }
+
+
+  class_call(perturbations_output_titles(pba,ppt,pop->output_format,titles),
+             pba->error_message,
+             pop->error_message);
+  number_of_titles = get_number_of_titles(titles);
+  size_data = number_of_titles*ppt->k_size[index_md];
+
+  class_alloc(data, sizeof(double)*ppt->ic_size[index_md]*size_data, pop->error_message);
+
+  for (index_z = 0; index_z < pop->z_pk_num; index_z++) {
+
+    z = pop->z_pk[index_z];
+
+    /** - first, check that requested redshift z_pk is consistent */
+
+    class_test((pop->z_pk[index_z] > ppt->z_max_pk),
+               pop->error_message,
+               "T_i(k,z) computed up to z=%f but requested at z=%f. Must increase z_max_pk in precision file.",ppt->z_max_pk,pop->z_pk[index_z]);
+
+    if (pop->z_pk_num == 1)
+      redshift_suffix[0]='\0';
+    else
+      sprintf(redshift_suffix,"z%d_",index_z+1);
+
+    /** - second, open only the relevant files, and write a heading in each of them */
+
+    class_call(perturbations_output_data(pba,
+                                         ppt,
+                                         pop->output_format,
+                                         pop->z_pk[index_z],
+                                         number_of_titles,
+                                         data
+                                         ),
+               ppt->error_message,
                pop->error_message);
     number_of_titles = get_number_of_titles(titles);
     size_data = number_of_titles*ppt->k_size[index_md];
