@@ -303,6 +303,14 @@ int harmonic_init(
   else {
     phr->ct_size=0;
   }
+  
+  	/*----------------DLM--------------*/
+	/*--------------------------------*/
+  if (ppt->has_cl_cmb_delensing == _TRUE_){
+    phr->has_delensed_cls = _TRUE_;
+	phr->T_cmb=pba->T_cmb;
+	}
+	/*--------------------------------*/
 
   /** - a pointer to the fourier structure is stored in the spectra
       structure. This odd, unusual and unelegant feature has been

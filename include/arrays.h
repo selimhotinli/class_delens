@@ -500,6 +500,17 @@ int array_integrate_all_trapzd_or_spline(
                            double value,
                            int * index,
                            ErrorMsg errmsg);
+                           
+  /* DLM additions. */
+  int dlm_spline(double *x, double *y, int n, double yp1, double ypn, double *y2);
+  int dlm_splint(double *xa, double *ya, double *y2a, int n, double x, double *y);
+  int dlm_splie2(double *x1a, double *x2a, double **ya, int m, int n, double **y2a);
+  int dlm_splin2(double *x1a, double *x2a, double **ya, double **y2a, int m, int n,
+				  double x1, double x2, double *y);
+  void nrerror(char error_text[]);
+  double *vector(long nl, long nh);
+  void free_vector(double *v, long nl, long nh);
+  /* End DLM additions. */
 
 #ifdef __cplusplus
 }

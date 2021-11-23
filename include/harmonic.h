@@ -61,6 +61,15 @@ struct harmonic {
   int has_ll; /**< do we want \f$ C_l^{ll}\f$? (l = galaxy lensing potential) */
   int has_tl; /**< do we want \f$ C_l^{Tl}\f$? */
   int has_dl; /**< do we want \f$ C_l^{dl}\f$? */
+  
+  	/*----------------SH--------------*/
+	/*----------------DLM-------------*/
+  short has_delensed_cls; /** at the moment we hack the delensed spectra (tt only) here.*/
+
+  double T_cmb; /**< \f$ T_{cmb} \f$: current CMB temperature 
+				 in Kelvins (needed by lensing to also be in spectra).*/
+	/*--------------------------------*/
+
 
   int index_ct_tt; /**< index for type \f$ C_l^{TT} \f$*/
   int index_ct_ee; /**< index for type \f$ C_l^{EE} \f$*/

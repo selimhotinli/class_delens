@@ -1609,9 +1609,10 @@ int input_read_parameters_general(struct file_content * pfc,
   int flag1,flag2;
   double param1,param2;
   char string1[_ARGUMENT_LENGTH_MAX_];
-  char * options_output[33] =  {"tCl","pCl","lCl","nCl","dCl","sCl","mPk","mTk","dTk","vTk","sd",
-                                "TCl","PCl","LCl","NCl","DCl","SCl","MPk","MTk","DTk","VTk","Sd",
-                                "TCL","PCL","LCL","NCL","DCL","SCL","MPK","MTK","DTK","VTK","SD"};
+  char * options_output[37] =  {"tCl","pCl","lCl","nCl","dCl","sCl","mPk","mTk","dTk","vTk","sd","dlCl",
+                                "TCl","PCl","LCl","NCl","DCl","SCl","MPk","MTk","DTk","VTk","Sd","dLCl",
+                                "TCL","PCL","LCL","NCL","DCL","SCL","MPK","MTK","DTK","VTK","SD","DlCl",
+                                "DLCl"};
   char * options_temp_contributions[10] = {"tsw","eisw","lisw","dop","pol","TSW","EISW","LISW","Dop","Pol"};
   char * options_number_count[8] = {"density","dens","rsd","RSD","lensing","lens","gr","GR"};
   char * options_modes[6] = {"s","v","t","S","V","T"};
@@ -1644,6 +1645,13 @@ int input_read_parameters_general(struct file_content * pfc,
       ppt->has_perturbations = _TRUE_;
       ppt->has_cls = _TRUE_;
     }
+	  /*----------------SH--------------*/
+	  /*----------------DLM-------------*/
+    if ((strstr(string1,"dlCl") != NULL) || (strstr(string1,"dLCl") != NULL) ||
+		(strstr(string1,"DlCl") != NULL) || (strstr(string1,"DLCl") != NULL)) {
+	  ppt->has_cl_cmb_delensing = _TRUE_;
+	}
+	  /*--------------------------------*/
     if ((strstr(string1,"nCl") != NULL) || (strstr(string1,"NCl") != NULL) || (strstr(string1,"NCL") != NULL) ||
         (strstr(string1,"dCl") != NULL) || (strstr(string1,"DCl") != NULL) || (strstr(string1,"DCL") != NULL)) {
       ppt->has_cl_number_count = _TRUE_;
@@ -1685,11 +1693,11 @@ int input_read_parameters_general(struct file_content * pfc,
     }
 
     /* Test */
-    class_call(parser_check_options(string1, options_output, 33, &flag1),
+    class_call(parser_check_options(string1, options_output, 37, &flag1),
                errmsg,
                errmsg);
     class_test(flag1==_FALSE_,
-               errmsg, "The options for output are {'tCl','pCl','lCl','nCl','dCl','sCl','mPk','mTk','dTk','vTk','Sd'}, you entered '%s'",string1);
+               errmsg, "The options for output are {'tCl','pCl','lCl','nCl','dCl','sCl','mPk','mTk','dTk','vTk','Sd', 'dlCl'}, you entered '%s'",string1);
   }
 
   /** 1.a) Terms contributing to the temperature spectrum */
@@ -4565,7 +4573,388 @@ int input_read_parameters_lensing(struct file_content * pfc,
       ple->has_lensed_cls = _TRUE_;
       /* Slightly increase precision by delta_l_max for more precise lensed Cl's*/
       ppt->l_scalar_max += ppr->delta_l_max;
-    }
+      
+      
+      
+    /*check if delensing is asked for.*/
+	  class_call(parser_read_string(pfc,
+																	"delensing",
+																	&(string1),
+																	&(flag1),
+																	errmsg),
+							 errmsg,
+							 errmsg); /* DLM */
+			if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) ||
+																(strstr(string1,"Y") != NULL) ||
+																(strcmp(string1,"iterative") == 0))) { /* DLM */
+
+				if (ppt->has_cl_cmb_delensing == _TRUE_) ple->has_delensed_cls = _TRUE_; /* DLM */
+				/*  DLM: imporant to distinguish the type of delensed cl (temp or pol)
+				 around here to then be able to output it with spectra structure.*/
+				 
+				 	/*-----------------DLM-------------------*/
+	                /*---------------------------------------*/
+	                class_read_int("delta_dl_max",ppr->delta_dl_max);
+	                
+	                class_read_double("sigma_beam",ple->sigma_beam);
+	                class_read_double("delta_noise",ple->delta_noise);
+	                
+	                class_read_int("derv_binedges",ple->derv_binedges);
+	                
+	                /*---------------------------------------*/
+	                
+				/*checking the types of noise requested.*/
+
+				if (strcmp(string1,"iterative") == 0) { /* DLM */
+
+					ple->has_itr_delensing = _TRUE_; /* DLM */
+
+					class_call(parser_read_string(pfc,
+																				"lens_noise_rcn",
+																				&(string1),
+																				&(flag1),
+																				errmsg),
+										 errmsg,
+										 errmsg); /* DLM */
+
+					if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)))
+						ple->has_lens_noise_rcn = _TRUE_; /* DLM */
+
+
+					class_call(parser_read_string(pfc,
+																				"noise_iteration_type",
+																				&(string1),
+																				&(flag1),
+																				errmsg),
+										 errmsg,
+										 errmsg); /* DLM */
+
+					if (flag1 == _TRUE_) {
+						flag2=_FALSE_;
+						if (strcmp(string1,"all") == 0) {
+							ple->has_nl_all_itr = _TRUE_;
+							flag2=_TRUE_;
+						}
+						if (strcmp(string1,"diag") == 0) {
+							ple->has_nl_diag_itr = _TRUE_;
+							flag2=_TRUE_;
+						}
+						if (strcmp(string1,"eb") == 0) {
+							ple->has_nl_eb_itr = _TRUE_;
+							flag2=_TRUE_;
+						}
+						if (strcmp(string1,"alternative") == 0) {
+							ple->has_nl_altr_itr = _TRUE_;
+							flag2=_TRUE_;
+						}
+
+					}
+
+					class_read_double("max_itr_steps",ple->max_itr_steps); /* DLM */
+
+					class_read_double("convergence_criterion_itr",ple->convergence_criterion_itr); /* DLM */
+
+					/* DLM: iterative delensing flag */
+
+					class_call(parser_read_string(pfc,"convergence type",&string1,&flag1,errmsg),
+										 errmsg,
+										 errmsg); /* DLM */
+
+					if (flag1 == _TRUE_) {
+						flag2=_FALSE_;
+						if (strcmp(string1,"every") == 0) {
+							ple->convergence_type = every; /* DLM */
+							flag2=_TRUE_;
+						}
+						if (strcmp(string1,"total") == 0) {
+							ple->convergence_type = total; /* DLM */
+							flag2=_TRUE_;
+						}
+					}
+
+
+
+				}
+
+				class_call(parser_read_string(pfc,
+																			"delensing derivatives",
+																			&(string1),
+																			&(flag1),
+																			errmsg),
+									 errmsg,
+									 errmsg);
+
+				if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+					ple->calculate_pderivaties = _TRUE_;
+
+					class_call(parser_read_string(pfc,"derivative type",&string1,&flag1,errmsg), /* DLM */
+										 errmsg,
+										 errmsg);
+					if (flag1 == _TRUE_) {
+						flag2=_FALSE_;
+						if (strcmp(string1,"lensed") == 0) {
+							ple->derv_type = lensed; /* DLM */
+							flag2=_TRUE_;
+						}
+						if (strcmp(string1,"delensed") == 0) {
+							ple->derv_type = delensed; /* DLM */
+							flag2=_TRUE_;
+						}
+					}
+				}
+                
+				class_call(parser_read_string(pfc,
+																			"calculate_derviaties_wrt_unlensed",
+																			&(string1),
+																			&(flag1),
+																			errmsg),
+									 errmsg,
+									 errmsg);
+
+				if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+					ple->calculate_derviaties_wrt_unlensed = _TRUE_;
+                    
+					class_call(parser_read_string(pfc,"unlensed derivative type",&string1,&flag1,errmsg), /* DLM */
+										 errmsg,
+										 errmsg);
+					if (flag1 == _TRUE_) {
+						flag2=_FALSE_;
+						if (strcmp(string1,"delensed") == 0) {
+                            /* printf("delensed_wrt_unlensed is true \n"); */
+							ple->delensed_wrt_unlensed = _TRUE_; /* DLM */
+							flag2=_TRUE_;
+						}
+						if (strcmp(string1,"lensed") == 0) {
+                            /* printf("lensed_wrt_unlensed is true  \n"); */
+							ple->lensed_wrt_unlensed = _TRUE_; /* DLM */
+							flag2=_TRUE_;
+						}
+					}
+                }
+
+                
+				/* DLM: iterative delensing flag */
+				class_call(parser_read_string(pfc,"temperature noise spectra type",&string1,&flag1,errmsg),
+									 errmsg,
+									 errmsg); /* DLM */
+				if (flag1 == _TRUE_) {
+					flag2=_FALSE_;
+					if (strcmp(string1,"idealized") == 0) {
+						ple->temperature_noise_type = idealized_tn; /* DLM */
+						flag2=_TRUE_;
+					}
+					if (strcmp(string1,"external") == 0) {
+						ple->temperature_noise_type = external_tn; /* DLM */
+						flag2=_TRUE_;
+						/* if data for temperature noise spectra is sourced externally, record here the command needed to aquire it.*/
+						class_call(parser_read_string(pfc, "command_for_temperature_noise_spec",
+																					&(string1), &(flag1), errmsg),errmsg, errmsg);  /* DLM */
+
+						class_test(strlen(string1) == 0,
+											 errmsg,
+											 "You omitted to write a command for the external temperature noise spectra");
+
+						ple->command_for_temp_noise_spec = (char *) malloc (strlen(string1) + 1); /* DLM */
+						strcpy(ple->command_for_temp_noise_spec, string1); /* DLM */
+					}
+				}
+				class_test(flag2==_FALSE_,
+									 errmsg,
+									 "could not identify tenperature noise spectra type, check that it is one of 'idealized' (for CLASS to generate the idealized noise spectra) or 'external' (for the spectra to be inputted externally with a data file). For 'external' don't forget to include the data file path to 'external noise temperature spectra'.");
+/**************/
+				/* DLM */
+				class_call(parser_read_string(pfc,"cmb spectra type",&string1,&flag1,errmsg),
+									 errmsg,
+									 errmsg); /* DLM */
+				if (flag1 == _TRUE_) {
+					flag2=_FALSE_;
+					if (strcmp(string1,"internal") == 0) {
+						ple->cmb_spectra_type = internal_cmb; /* DLM */
+						flag2=_TRUE_;
+					}
+					if (strcmp(string1,"external") == 0) {
+						ple->cmb_spectra_type = external_cmb; /* DLM */
+						flag2=_TRUE_;
+						/* if data for temperature noise spectra is sourced externally, record here the command needed to aquire it.*/
+						class_call(parser_read_string(pfc, "command_for_external_cmb_spectra",
+																					&(string1), &(flag1), errmsg),errmsg, errmsg);  /* DLM */
+
+						class_test(strlen(string1) == 0,
+											 errmsg,
+											 "You omitted to write a command for the external temperature noise spectra");
+
+						ple->command_for_external_cmb_spectra = (char *) malloc (strlen(string1) + 1); /* DLM */
+						strcpy(ple->command_for_external_cmb_spectra, string1); /* DLM */
+					}
+				}
+				class_test(flag2==_FALSE_,
+									 errmsg,
+									 "could not identify cmb spectra type, check that it is one of 'internal' (for CLASS to generate the cmb spectra) or 'external' (for the spectra to be inputted externally with a data file). For 'external' don't forget to include the data file path to 'command_for_external_cmb_spectra'.");
+/**************/
+/**************/
+				/* DLM */
+				class_call(parser_read_string(pfc,"lensed cmb spectra type",&string1,&flag1,errmsg),
+									 errmsg,
+									 errmsg); /* DLM */
+				if (flag1 == _TRUE_) {
+					flag2=_FALSE_;
+					if (strcmp(string1,"internal") == 0) {
+						ple->cmb_spectra_lensed_type = internal_cmb; /* DLM */
+						flag2=_TRUE_;
+					}
+					if (strcmp(string1,"external") == 0) {
+						ple->cmb_spectra_lensed_type = external_cmb; /* DLM */
+						flag2=_TRUE_;
+						/* if data for temperature noise spectra is sourced externally, record here the command needed to aquire it.*/
+						class_call(parser_read_string(pfc, "command_for_external_lensed_cmb_spectra",
+																					&(string1), &(flag1), errmsg),errmsg, errmsg);  /* DLM */
+
+						class_test(strlen(string1) == 0,
+											 errmsg,
+											 "You omitted to write a command for the external temperature noise spectra");
+
+						ple->command_for_external_lensed_cmb_spectra = (char *) malloc (strlen(string1) + 1); /* DLM */
+						strcpy(ple->command_for_external_lensed_cmb_spectra, string1); /* DLM */
+					}
+				}
+				class_test(flag2==_FALSE_,
+									 errmsg,
+									 "could not identify lensed cmb spectra type, check that it is one of 'internal' (for CLASS to generate the cmb spectra) or 'external' (for the spectra to be inputted externally with a data file). For 'external' don't forget to include the data file path to 'command_for_external_lensed_cmb_spectra'.");
+/**************/
+/**************/
+				class_call(parser_read_string(pfc,"noise units",&string1,&flag1,errmsg), /* DLM */
+									 errmsg,
+									 errmsg);
+				if (flag1 == _TRUE_) {
+					if (strcmp(string1,"unitless") == 0) {
+						ple->noise_type = unitless; /* DLM */
+					}
+				}
+
+				class_call(parser_read_string(pfc,
+																			"output_spectra_noise",
+																			&(string1),
+																			&(flag1),
+																			errmsg), /* DLM */
+									 errmsg,
+									 errmsg); /* DLM */
+
+				if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)))
+					ple->output_spectra_noise = _TRUE_; /* DLM */
+
+
+				class_call(parser_read_string(pfc,
+																			"output_derivatives",
+																			&(string1),
+																			&(flag1),
+																			errmsg), /* DLM */
+									 errmsg,
+									 errmsg); /* DLM */
+
+				if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)))
+					ple->output_derivatives = _TRUE_; /* DLM */
+
+
+				if (ppt->has_cl_cmb_polarization == _TRUE_){
+
+					class_call(parser_read_string(pfc,"polarization noise spectra type",&string1,&flag1,errmsg), /* DLM */
+										 errmsg,
+										 errmsg);
+					if (flag1 == _TRUE_) {
+						flag2=_FALSE_;
+						if (strcmp(string1,"idealized") == 0) {
+							ple->polarization_noise_type = idealized_pn; /* DLM */
+							flag2=_TRUE_;
+						}
+						if (strcmp(string1,"external") == 0) {
+							ple->polarization_noise_type = external_pn; /* DLM */
+							flag2=_TRUE_;
+							/* if data for polarisation noise spectra is sourced externally, record here the command needed to aquire it.*/
+							class_call(parser_read_string(pfc, "command_for_polarization_noise_spec", &(string1), &(flag1), errmsg),errmsg, errmsg);
+
+							class_test(strlen(string1) == 0,
+												 errmsg,
+												 "You didn't write a command for the external polarisation noise spectra");
+
+							ple->command_for_polarization_noise_spec = (char *) malloc (strlen(string1) + 1);
+							strcpy(ple->command_for_polarization_noise_spec, string1);
+						}
+					}
+					class_test(flag2==_FALSE_,
+										 errmsg,
+										 "could not identify polarization noise spectra type, check that it is one of 'idealized' (for CLASS to generate the idealized noise spectra) or 'external' (for the spectra to be inputted externally with a data file). For 'external' don't forget to include the data file path (& the 'cat' command) to 'external noise temperature spectra'.");
+				}
+
+				class_call(parser_read_string(pfc,"lensing reconstruction noise spectra type",&string1,&flag1,errmsg),
+									 errmsg,
+									 errmsg); /* DLM */
+				if (flag1 == _TRUE_) {
+					flag2=_FALSE_;
+					if (strcmp(string1,"internal") == 0) {
+						ple->lens_rec_noise_type = internal_rn;
+
+						class_call(parser_read_string(pfc,
+																					"min_varr_type",
+																					&(string1),
+																					&(flag1),
+																					errmsg),
+											 errmsg,
+											 errmsg); /* DLM */
+						if (flag1 == _TRUE_) {
+							flag2=_FALSE_;
+							if (strcmp(string1,"all") == 0) {
+								ple->has_nl_all  = _TRUE_ ; /* DLM */
+								ple->has_nl_diag = _TRUE_ ; /* DLM */
+								flag2=_TRUE_;
+							}
+							if (strcmp(string1,"diag") == 0) {
+								ple->has_nl_all  = _FALSE_; /* DLM */
+								ple->has_nl_diag = _TRUE_ ; /* DLM */
+								flag2=_TRUE_;
+							}
+							if (strcmp(string1,"eb") == 0) {
+								ple->has_nl_all  = _FALSE_; /* DLM */
+								ple->has_nl_diag = _FALSE_; /* DLM */
+								ple->has_nl_eb   = _TRUE_ ; /* DLM */
+								flag2=_TRUE_;
+							}
+						}
+
+						flag2=_TRUE_;
+						//	  class_test(flag2=_TRUE_,
+						//				 errmsg,
+						//				 "internal lensing reconstruction noise spectra is unavailable at the moment.");
+                        
+                        // Read in l_mask for lensing reconstruction
+                        class_read_int("recon_mask_lmin_T",ple->recon_mask_lmin_T);
+                        class_read_int("recon_mask_lmax_T",ple->recon_mask_lmax_T);
+                        class_read_int("recon_mask_lmin_E",ple->recon_mask_lmin_E);
+                        class_read_int("recon_mask_lmax_E",ple->recon_mask_lmax_E);
+                        class_read_int("recon_mask_lmin_B",ple->recon_mask_lmin_B);
+                        class_read_int("recon_mask_lmax_B",ple->recon_mask_lmax_B);
+                        
+                        
+					}
+					else if (strcmp(string1,"external") == 0) {
+						ple->lens_rec_noise_type = external_rn; /* DLM */
+						flag2=_TRUE_;
+						/* if data for lensing reconstruction noise spectra is sourced externally, record here the command needed to aquire it.*/
+						class_call(parser_read_string(pfc, "command_for_lens_recon_noise_spec", &(string1), &(flag1), errmsg),errmsg, errmsg); /* DLM */
+
+						class_test(strlen(string1) == 0,
+											 errmsg,
+											 "You didn't write a command for the external lensing reconstruction noise spectra");
+
+						ple->command_for_lens_recon_noise_spec = (char *) malloc (strlen(string1) + 1);
+						strcpy(ple->command_for_lens_recon_noise_spec, string1);
+
+					}
+				}
+				class_test(flag2==_FALSE_,
+									 errmsg,
+									 "could not identify lensing reconstruction spectra type, check that it is one of 'internal' (for CLASS to generate the noise spectra internally) or 'external' (for the spectra to be inputted externally with a data file). For 'external' don't forget to include the data file path (& 'cat' command) to 'external lensing reconstruction noise spectra'.");
+			}
+		}
     else {
       class_stop(errmsg,"you asked for lensed CMB Cls, but this requires a minimal number of options: 'modes' should include 's', 'output' should include 'tCl' and/or 'pCl', and also, importantly, 'lCl', the CMB lensing potential spectrum.");
     }
@@ -5066,6 +5455,8 @@ int input_read_parameters_output(struct file_content * pfc,
   class_read_int("lensing_verbose",ple->lensing_verbose);
   class_read_int("distortions_verbose",psd->distortions_verbose);
   class_read_int("output_verbose",pop->output_verbose);
+  
+  class_read_int("delensing_verbose",ple->delensing_verbose); /* DLM */
 
 
   /**
@@ -5189,6 +5580,12 @@ int input_default_params(struct background *pba,
   ppt->has_nc_gr = _FALSE_;
   /** 1.c) 'dTk' (or 'mTk') case */
   ppt->has_metricpotential_transfers = _FALSE_;
+  
+  ppt->has_cl_cmb_delensing = _FALSE_;/* DLM */
+  /*----------------SH--------------*/
+  /*-------cant remember this-------*/
+  ppt->has_nc_delens = _FALSE_;
+  /*--------------------------------*/
 
   /** 2) Perturbed recombination */
   ppt->has_perturbed_recombination=_FALSE_;
@@ -5570,6 +5967,59 @@ int input_default_params(struct background *pba,
 
   /** 1) Lensing */
   ple->has_lensed_cls = _FALSE_;
+  
+  	phr->has_delensed_cls = _FALSE_; /* DLM */
+
+	ple->temperature_noise_type = idealized_tn; /* DLM */
+	ple->polarization_noise_type = idealized_pn; /* DLM */
+	ple->lens_rec_noise_type = external_rn; /* DLM */
+
+    ple->cmb_spectra_type = internal_cmb; /* DLM */
+    ple->cmb_spectra_lensed_type = internal_cmb; /* DLM */    
+
+	ple->command_for_temp_noise_spec="write here your command for external temperature noise spectrum";
+	ple->command_for_polarization_noise_spec="write here your command for external polarization noise spectrum";
+
+	ple->derv_type = delensed;
+	/** note that external input is the default option for lensing reconstruction */
+	ple->command_for_lens_recon_noise_spec="lensing_reconstruction.dat";
+
+	ple->sigma_beam  = 0.000290888;  /* DLM: 1 arc-minute in radians */
+	ple->delta_noise = 0.000290888;  /* 1 arc-minute in radians */
+
+	ple->has_lens_noise_rcn = _FALSE_; /* DLM */
+
+	ple->has_nl_all  = _FALSE_; /* DLM */
+	ple->has_nl_diag = _FALSE_; /* DLM */
+	ple->has_nl_eb   = _FALSE_; /* DLM */
+
+	ple->has_nl_eb_itr   = _FALSE_; /* DLM */
+	ple->has_nl_diag_itr = _FALSE_; /* DLM */
+	ple->has_nl_all_itr  = _FALSE_; /* DLM */
+	ple->has_nl_altr_itr = _FALSE_; /* DLM */
+
+	ple->output_spectra_noise = _FALSE_; /* DLM */
+
+	ple->calculate_pderivaties = _FALSE_; /* DLM */
+
+	ple->output_derivatives = _FALSE_;
+	ple->derv_binedges = 250;
+
+	ple->max_itr_steps = 100; /* DLM */
+	ple->convergence_criterion_itr = 1e-6; /* DLM */
+    
+	ple->calculate_derviaties_wrt_unlensed = _FALSE_; /**< DLM:  */
+	ple->lensed_wrt_unlensed = _FALSE_; /**< DLM:  */
+	ple->delensed_wrt_unlensed = _FALSE_; /**< DLM:  */
+	
+    // By default, apply no l_mask for lensing reconstruction
+    ple->recon_mask_lmin_T = 0;
+    ple->recon_mask_lmax_T = 30000;
+    ple->recon_mask_lmin_E = 0;
+    ple->recon_mask_lmax_E = 30000;
+    ple->recon_mask_lmin_B = 0;
+    ple->recon_mask_lmax_B = 30000;
+
 
   /** 2) Should the lensed spectra be rescaled? */
   ptr->lcmb_rescale=1.;
@@ -5648,7 +6098,6 @@ int input_default_params(struct background *pba,
   /** 1.i) Spectral distortions */
   pop->write_distortions = _FALSE_;
 
-
   /** 2) Verbosity */
   pba->background_verbose = 0;
   pth->thermodynamics_verbose = 0;
@@ -5661,6 +6110,9 @@ int input_default_params(struct background *pba,
   ple->lensing_verbose = 0;
   psd->distortions_verbose = 0;
   pop->output_verbose = 0;
+  
+  	ple->delensing_verbose = 0; /* DLM */
+	ple->noise_type = unitfull; /* DLM */
 
   return _SUCCESS_;
 
