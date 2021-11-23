@@ -554,6 +554,10 @@ class_precision_parameter(num_mu_minus_lmax,int,70) /**< difference between num_
 class_precision_parameter(delta_l_max,int,500)/**< difference between l_max in unlensed and lensed spectra */
 class_precision_parameter(tol_gauss_legendre,double,ppr->smallest_allowed_variation) /**< tolerance with which quadrature points are found: must be very small for an accurate integration (if not entered manually, set automatically to match machine precision) */
 
+/* DLM additions. */
+class_precision_parameter(delta_dl_max,int,100)/**< difference between l_max in unlensed and lensed spectra */
+/* End DLM additions. */
+
 /*
  * Spectral distortions precision parameters
  */

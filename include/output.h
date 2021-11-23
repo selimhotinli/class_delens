@@ -190,6 +190,59 @@ extern "C" {
                             double one_k,
                             double one_pk
                             );
+                            
+ 	int output_one_line_of_nl(
+														struct background * pba,
+														struct harmonic * phr,
+														struct output * pop,
+														FILE * clfile,
+														double l,
+														double * nl, /* array with argument cl[index_ct] */
+														int nlt_size
+														); /* DLM */
+
+	int output_one_line_of_nl_tp(
+															 struct output * pop,
+															 FILE * noisefile,
+															 double one_l,
+															 double one_nt,
+															 double one_np
+															 ); /* DLM */
+
+	int output_open_nl_tp_file(
+														 struct output * pop,
+														 struct lensing * ple,
+														 FILE * * pkfile,
+														 FileName filename,
+														 char * first_line
+														 ); /* DLM */
+
+	int output_one_line_of_cl_derv(
+																 struct output * pop,
+																 struct lensing * ple,
+																 FILE * clfile,
+																 double cl_derv,
+																 int lcurr,
+																 int lsize); /* DLM */
+
+
+	int output_open_cl_derv_file(
+															 struct output * pop,
+															 struct lensing * ple,
+															 FILE * * pkfile,
+															 FileName filename,
+															 char * first_line
+															 ); /* DLM */
+
+	int output_open_nl_lens_file(
+															 struct harmonic * phr,
+															 struct output * pop,
+															 struct lensing * ple,
+															 FILE * * clfile,
+															 FileName filename,
+															 char * first_line,
+															 int lmax
+															 ); /* DLM */
 
 #ifdef __cplusplus
 }

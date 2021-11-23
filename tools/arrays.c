@@ -3,7 +3,203 @@
  * Julien Lesgourgues, 18.04.2010
  */
 
+#define NR_END 1
+#define FREE_ARG char*
+
 #include "arrays.h"
+
+
+/*-\------/-- DLM INTERPOLATION FUNCTION ADDITIONS --\------/-*/
+/*--\----/--- DLM INTERPOLATION FUNCTION ADDITIONS ---\----/--*/
+/*---\--/---- DLM INTERPOLATION FUNCTION ADDITIONS ----\--/---*/
+/*----\/----- DLM INTERPOLATION FUNCTION ADDITIONS -----\/----*/
+#include "nrutil.h" // DLM: for 2-dimensional spline-bicubic interpolation
+
+
+void nrerror(char error_text[])
+/* Numerical Recipes standard error handler */
+{
+	fprintf(stderr,"Numerical Recipes run-time error...\n");
+	fprintf(stderr,"%s\n",error_text);
+	fprintf(stderr,"...now exiting to system...\n");
+	exit(1);
+}
+
+void free_vector(double *v, long nl, long nh)
+/* free a double vector allocated with vector() */
+{
+	free((FREE_ARG) (v+nl-NR_END));
+}
+double *vector(long nl, long nh)
+/* allocate a double vector with subscript range v[nl..nh] */
+{
+	double *v;
+
+	v=(double *)malloc((size_t) ((nh-nl+1+NR_END)*sizeof(double)));
+	if (!v) nrerror("allocation failure in vector()");
+	return v-nl+NR_END;
+}
+
+int dlm_spline(double *x, double *y, int n, double yp1, double ypn, double *y2)
+/*Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
+ x1 < x2 < .. . < xN, and given values yp1 and ypn for the first derivative of the interpolating
+ function at points 1 and n, respectively, this routine returns an array y2[1..n] that contains
+ the second derivatives of the interpolating function at the tabulated points xi. If yp1 and/or
+ ypn are equal to 1 × 1030 or larger, the routine is signaled to set the corresponding boundary
+ condition for a natural spline, with zero second derivative on that boundary.*/
+{
+	int i,k;
+	double p,qn,sig,un;
+	double * u;
+
+	ErrorMsg errmsg;
+//	printf("last seen alive in dlm_spline\n");
+
+	u = malloc(n * sizeof(double));
+
+	if (u == NULL) {
+		sprintf(errmsg,"%s(L:%d) Cannot allocate u",__func__,__LINE__);
+		return _FAILURE_;
+	}
+
+	if (yp1 > 0.99e30){
+		//The lower boundary condition is set either to be “natural”
+		y2[0]=0.0;
+		u[0]=0.0;
+	}
+	else { //or else to have a specified first derivative.
+		y2[0] = -0.5;
+		u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
+	}
+
+	for (i=1;i<=n-1;i++) {
+		// This is the decomposition loop of the tridiagonal algorithm.
+		// y2 and u are used for temporary storage of the decomposed factors.
+		sig=(x[i]-x[i-1])/(x[i+1]-x[i-1]);
+		p=sig*y2[i-1]+2.0;
+		y2[i]=(sig-1.0)/p;
+		u[i]=(y[i+1]-y[i])/(x[i+1]-x[i]) - (y[i]-y[i-1])/(x[i]-x[i-1]);
+		u[i]=(6.0*u[i]/(x[i+1]-x[i-1])-sig*u[i-1])/p;
+	}
+
+	if (ypn > 0.99e30)// The upper boundary condition is set either to be “natural”
+		qn=un=0.0;
+	else { // or else to have a specified first derivative.
+		qn=0.5;
+		un=(3.0/(x[n]-x[n-1]))*(ypn-(y[n]-y[n-1])/(x[n]-x[n-1]));
+	}
+	y2[n]=(un-qn*u[n-1])/(qn*y2[n-1]+1.0);
+
+	for (k=n-1;k>=0;k--)// This is the backsubstitution loop of the tridiagonal algorithm.
+	{
+		y2[k]=y2[k]*y2[k+1]+u[k];
+	}
+
+	if (u != NULL) {
+		free(u);
+	}
+
+	return _SUCCESS_;
+
+}
+
+int dlm_splint(double *xa, double *ya, double *y2a, int n, double x, double *y)
+/*Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
+ and given the array y2a[1..n], which is the output from spline above, and given a value of
+ x, this routine returns a cubic-spline interpolated value y.*/
+{
+	int klo,khi,k;
+	double h,b,a;
+	klo=0;
+	khi=n;
+
+//	printf("last seen alive in dlm_splint\n");
+	while (khi-klo > 1) {
+		k=(khi+klo) >> 1;
+		if (xa[k] > x) khi=k;
+		else klo=k;
+	}
+	/*We will find the right place in the table by means of
+	 bisection. This is optimal if sequential calls to this
+	 routine are at random values of x. If sequential calls
+	 are in order, and closely spaced, one would do better
+	 to store previous values of klo and khi and test if
+	 they remain appropriate on the next call.
+	 klo and khi now bracket the input value of x.*/
+	h=xa[khi]-xa[klo];
+	a=(xa[khi]-x)/h;
+	b=(x-xa[klo])/h;
+	*y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
+//	printf("we are safely out of dlm_splint\n");
+
+	return _SUCCESS_;
+
+}
+
+int dlm_splie2(double *x1a, double *x2a, double **ya, int m, int n, double **y2a)
+{
+	/*Given an m by n tabulated function ya[1..m][1..n], and tabulated independent variables
+	 x2a[1..n], this routine constructs one-dimensional natural cubic splines of the rows of ya
+	 and returns the second-derivatives in the array y2a[1..m][1..n]. (The array x1a[1..m] is
+	 included in the argument list merely for consistency with routine splin2.)*/
+//	int dlm_spline(double *x, double *y, int n, double yp1, double ypn, double *y2);
+
+//	printf("last seen alive in dlm_splie2\n");
+	int j;
+	for (j=0;j<=m;j++){
+		dlm_spline(x2a,ya[j],n,1.0e30,1.0e30,y2a[j]);
+//		printf("y2a[%d][1]=%e\n",j,y2a[j][1]);
+//		printf("y2a[%d][6]=%e\n",j,y2a[j][6]);
+//		printf("y2a[%d][16]=%e\n",j,y2a[j][16]);
+	}
+//	printf("we are safely out of dlm_splie2\n");
+
+	return _SUCCESS_;
+
+}
+
+int dlm_splin2(double *x1a, double *x2a, double **ya, double **y2a, int m, int n,
+				double x1, double x2, double *y)
+{
+	/*Given x1a, x2a, ya, m, n as described in splie2 and y2a as produced by that routine; and
+	 given a desired interpolating point x1,x2; this routine returns an interpolated function value y
+	 by bicubic spline interpolation.*/
+//	int dlm_spline(double *x, double *y, int n, double yp1, double ypn, double *y2);
+//	int dlm_splint(double *xa, double *ya, double *y2a, int n, double x, double *y);
+	int j;
+	double *ytmp,*yytmp;
+
+	ErrorMsg errmsg;
+
+//	printf("last seen alive in dlm_splin2\n");
+
+	class_realloc(ytmp,
+				  ytmp,
+				  (m+1)*sizeof(double),
+				  errmsg);
+
+	class_realloc(yytmp,
+				  yytmp,
+				  (m+1)*sizeof(double),
+				  errmsg);
+
+	//  Perform m evaluations of the row splines constructed by splie2,
+	//  using the one-dimensional spline evaluator splint.
+	for (j=0;j<=m;j++)
+		dlm_splint(x2a,ya[j],y2a[j],n,x2,&yytmp[j]);
+	dlm_spline(x1a,yytmp,m,1.0e30,1.0e30,ytmp);
+	//Construct the one-dimensional column spline and evaluate it.
+	dlm_splint(x1a,yytmp,ytmp,m,x1,y);
+
+	free(yytmp);
+	free(ytmp);
+
+//	printf("we are safely out of dlm_splin2\n");
+
+	return _SUCCESS_;
+
+}
+
 
 /**
  * Called by thermodynamics_init(); perturbations_sources().
