@@ -781,7 +781,6 @@ int lensing_init(
     /** - Last element in \f$ \mu \f$ will be for \f$ \mu=1 \f$, needed for sigma2.
      The rest will be chosen as roots of a Gauss-Legendre quadrature **/
     
-    // SH: what is the reason for this precise choice for num_mu? is there value at which integration becomes stable, independent of the value of \ell?
     if (ppr->accurate_lensing == _TRUE_) {
         num_mu=(ple->l_unlensed_max+ppr->num_mu_minus_lmax); /* Must be even ?? CHECK */
         num_mu += num_mu%2; /* Force it to be even */
@@ -827,13 +826,6 @@ int lensing_init(
             
         }
     }
-    
-    //        for (index_mu=0;index_mu<num_mu-1;index_mu++) {
-    //
-    //            printf("%d   ,   %e   ,\n",index_mu,mu[index_mu]);
-    //            printf("%d   ,   %e   ,\n",index_mu,w8[index_mu]);
-    //        }
-    //         return;
     
     /** - Compute \f$ d^l_{mm'} (\mu) \f$*/
     
@@ -2189,7 +2181,7 @@ schedule (static)
                 }
             }
         }
-        if (ple->delensing_verbose > 2) /* DLM */ printf("Done calculating the lensing stuff.\n");
+        if (ple->delensing_verbose > 2) /* DLM */ printf("Done calculating lensing.\n");
         
         //fin = omp_get_wtime();
         //cpu_time = (fin-debut);
@@ -2207,13 +2199,11 @@ schedule (static)
                            ple->error_message,
                            ple->error_message);
             }
+
             if (ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->lensed_wrt_unlensed == _TRUE_){
-                //class_call(lensing_lensed_cl_tt_derv(ksi_ln_derv,d00,w8,num_mu-1,ple),
-                //           ple->error_message,
-                //           ple->error_message);
-                class_call(lensing_lensed_cl_tt_derv_all(ksi_ln_derv,d00,w8,num_mu-1,ple),
-                           ple->error_message,
-                           ple->error_message);
+                class_call(lensing_lensed_cl_tt_derv(ksi_ln_derv,d00,w8,num_mu-1,ple),
+                          ple->error_message,
+                          ple->error_message);
             }
         }
         
@@ -2227,12 +2217,12 @@ schedule (static)
                            ple->error_message);
             }
             if (ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->lensed_wrt_unlensed == _TRUE_){
-                //class_call(lensing_lensed_cl_te_derv(ksiX_ln_derv,d20,w8,num_mu-1,ple),
-                //           ple->error_message,
-                //           ple->error_message);
-                class_call(lensing_lensed_cl_te_derv_all(ksiX_ln_derv,d20,w8,num_mu-1,ple),
-                           ple->error_message,
-                           ple->error_message);
+                class_call(lensing_lensed_cl_te_derv(ksiX_ln_derv,d20,w8,num_mu-1,ple),
+                          ple->error_message,
+                          ple->error_message);
+//                 class_call(lensing_lensed_cl_te_derv_all(ksiX_ln_derv,d20,w8,num_mu-1,ple),
+//                            ple->error_message,
+//                            ple->error_message);
             }
         }
         
@@ -2248,7 +2238,7 @@ schedule (static)
             }
             
             if(ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->lensed_wrt_unlensed == _TRUE_){
-                /*
+                
                 class_call(lensing_lensed_cl_ee_bb_dervE(ksip_ln_dervE,ksim_ln_dervE,d22,d2m2,w8,num_mu-1,ple),
                            ple->error_message,
                            ple->error_message);
@@ -2256,15 +2246,14 @@ schedule (static)
                 class_call(lensing_lensed_cl_ee_bb_dervB(ksip_ln_dervB,ksim_ln_dervB,d22,d2m2,w8,num_mu-1,ple),
                            ple->error_message,
                            ple->error_message);
-                */
-                           
-                class_call(lensing_lensed_cl_ee_bb_dervE_all(ksip_ln_dervE,ksim_ln_dervE,d22,d2m2,w8,num_mu-1,ple),
-                           ple->error_message,
-                           ple->error_message);
+               
+//                 class_call(lensing_lensed_cl_ee_bb_dervE_all(ksip_ln_dervE,ksim_ln_dervE,d22,d2m2,w8,num_mu-1,ple),
+//                            ple->error_message,
+//                            ple->error_message);
                 
-                class_call(lensing_lensed_cl_ee_bb_dervB_all(ksip_ln_dervB,ksim_ln_dervB,d22,d2m2,w8,num_mu-1,ple),
-                           ple->error_message,
-                           ple->error_message);
+//                 class_call(lensing_lensed_cl_ee_bb_dervB_all(ksip_ln_dervB,ksim_ln_dervB,d22,d2m2,w8,num_mu-1,ple),
+//                            ple->error_message,
+//                            ple->error_message);
             }
         }
         
@@ -2349,7 +2338,6 @@ schedule (static)
         /*----------------------- begin delensing ------------------------*/
         /*----------------------------------------------------------------*/
         for( itr_index = 0; itr_index < ple->max_itr_steps; itr_index++){ /* DLM */
-            if (ple->delensing_verbose > 2) /* DLM */ printf("%d a go\n", itr_index);
             if (ple->convergence_type == total && itr_index > 1
                 && cratio <= ple->convergence_criterion_itr)
             {
@@ -2379,7 +2367,6 @@ schedule (static)
                        ple->has_nl_altr_itr == _FALSE_ &&
                        (ple->has_nl_all == _TRUE_ || ple->has_nl_diag == _TRUE_)) /* DLM */
                     {
-                        //printf("DEBUG: We are updating all the modes when reconstructing noise iteratively\n"); /* DLM */
                         
                         lensing_reconstr_nl_minvar(
                                                    d3m3, d33,
@@ -2461,16 +2448,15 @@ schedule (static)
                     else if(ple->has_nl_eb_itr == _TRUE_ &&
                             (ple->has_nl_all == _TRUE_ || ple->has_nl_diag == _TRUE_)){ /* DLM */
                         
-                        // printf("DEBUG: We are only updating the B modes when reconstructing noise iteratively\n"); /* DLM */
                         
-                        /* internal loop for iterating the EB-varriance weigthed lensing noise and BB-spectra estimate*/
+/* internal loop for iterating the EB-varriance weigthed lensing noise and BB-spectra estimate*/
                         
                         if ((ple->convergence_type == total && itr_index > 1
                              && cratio <= ple->convergence_criterion_itr) ||
                             (ple->convergence_type == every && itr_index > 1
                              && type_2_flag == _TRUE_)) continue;
                         
-                        // DLM: calculating the EB-weigthed varriance term in the lensing noise estimate with (de)lensed bb-spectra at the 1st (2nd+) iterations.
+// DLM: calculating the EB-weigthed varriance term in the lensing noise estimate with (de)lensed bb-spectra at the 1st (2nd+) iterations.
                         lensing_reconstr_nl_EB(
                                                d3m3, d33,
                                                d3m2, d32,
@@ -2542,9 +2528,8 @@ schedule (static)
                             (ple->convergence_type == every && itr_index > 0
                              && type_2_flag == _TRUE_))
                         {
-                            //                            printf("we are calculating the final min-varr\n");
                             
-                            // DLM: once the iterated EB-varriance weighted term is converged, add this and the rest of the weigths to calculate the minimum varriance noise.
+// DLM: once the iterated EB-varriance weighted term is converged, add this and the rest of the weigths to calculate the minimum varriance noise.
                             lensing_reconstr_nl_minvar(
                                                        d3m3, d33,
                                                        d3m2, d32,
@@ -2573,7 +2558,6 @@ schedule (static)
                         }
                     }
                     
-                    // At the moment I am ingnoring the cross-corralations in calculating the minimum variance noise, will add these shortly.
                     if(ple->has_nl_all == _TRUE_ && ple->has_nl_eb_itr == _FALSE_){
                         
                         double TTTT,TTTE,TTEE,TEEE,EEEE,TETE,TBTB,TBEB,EBEB,BBBB; /* DLM */
@@ -2848,8 +2832,6 @@ schedule (static)
                              ple->error_message);
                 
             }
-            
-            if (ple->delensing_verbose > 2) /* DLM */ printf("we are done allocating stuff\n");
             
             if (ple->has_dl_tt == _TRUE_ || ple->has_dl_te == _TRUE_ ||
                 ple->has_dl_ee == _TRUE_) {
@@ -3131,10 +3113,6 @@ schedule (static)
                                && ple->delensed_wrt_unlensed == _TRUE_){
                                 // ksim_dlu_dervE[l][index_mu] = resm_dl/(cl_ee[l]-cl_bb[l]);
                                 // ksim_dlu_dervB[l][index_mu] = -resm_dl/(cl_ee[l]-cl_bb[l]);
-//                                 if(index_mu==0 && l > 2500 && l < 3500){
-//                                     printf("ksim_dlu_dervE[%d][%d]=%e\n",l,index_mu,ksim_dlu_dervE[l][index_mu]);
-//                                     printf("ksim_dlu_dervB[%d][%d]=%e\n",l,index_mu,ksim_dlu_dervB[l][index_mu]);
-//                                 }
                                 
                                 // ksip_dlu_dervE[l][index_mu] = resp_dl/(cl_ee[l]+cl_bb[l]);
                                 // ksip_dlu_dervB[l][index_mu] = resp_dl/(cl_ee[l]+cl_bb[l]);
@@ -3541,7 +3519,7 @@ schedule (static)
                     }
                 }
             }
-//             printf("above class_call lensing_delensed_cl_tt \n");
+
             if (ple->has_dl_tt == _TRUE_) {
                 class_call(lensing_delensed_cl_tt(ksi_dl,hlbar,d00,w8,num_mu-1,ple),
                            ple->error_message,
@@ -3557,12 +3535,9 @@ schedule (static)
                     class_call(lensing_delensed_cl_tt_derv(ksi_dlu_derv,d00,w8,num_mu-1,ple),
                                ple->error_message,
                                ple->error_message);
-                    
-
                 }
                 */
                 
-                //if (ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->delensed_wrt_unlensed == _TRUE_){
                 if(((ple->convergence_type == total && itr_index > 1
                       && cratio <= ple->convergence_criterion_itr) ||
                      (ple->convergence_type == every && itr_index > 1
@@ -3597,7 +3572,7 @@ schedule (static)
                     
                 }
             }
-//             printf("above class_call lensing_delensed_cl_te \n");
+            
             if (ple->has_dl_te == _TRUE_) {
                 /*JRM: TE filtering
                  h filters in these functions do not do anything, and are therefore left unchanged */
@@ -3616,8 +3591,6 @@ schedule (static)
                                ple->error_message);
                 }
                 */
-                
-                //if (ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->delensed_wrt_unlensed == _TRUE_){
                 if(((ple->convergence_type == total && itr_index > 1
                       && cratio <= ple->convergence_criterion_itr) ||
                      (ple->convergence_type == every && itr_index > 1
@@ -3651,9 +3624,7 @@ schedule (static)
 
                 }
             }
-//             printf("above class_call lensing_delensed_cl_ee_bb \n");
             if (ple->has_dl_ee == _TRUE_ || ple->has_dl_bb == _TRUE_) {
-//                 printf("above class_call lensing_delensed_cl_ee_bb \n");
                 class_call(lensing_delensed_cl_ee_bb(ksip_dl,ksim_dl,hlbar_P,d22,d2m2,w8,num_mu-1,ple),
                            ple->error_message,
                            ple->error_message);
@@ -3675,8 +3646,6 @@ schedule (static)
                                ple->error_message);
                 }
                 */
-                
-                // if(ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->delensed_wrt_unlensed == _TRUE_){
                 if(((ple->convergence_type == total && itr_index > 1
                       && cratio <= ple->convergence_criterion_itr) ||
                      (ple->convergence_type == every && itr_index > 1
@@ -3685,17 +3654,14 @@ schedule (static)
                      ple->has_itr_delensing == _FALSE_) &&
                     (ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->delensed_wrt_unlensed == _TRUE_))
                 {
-//                     printf("above class_call lensing_delensed_cl_ee_bb_dervE \n");
                     class_call(lensing_delensed_cl_ee_bb_dervE_all(ksip_dlu_dervE,ksim_dlu_dervE,d22,d2m2,w8,num_mu-1,ple),
                                ple->error_message,
                                ple->error_message);
-//                     printf("above class_call lensing_delensed_cl_ee_bb_dervB \n");
                     class_call(lensing_delensed_cl_ee_bb_dervB_all(ksip_dlu_dervB,ksim_dlu_dervB,d22,d2m2,w8,num_mu-1,ple),
                                ple->error_message,
                                ple->error_message);
                 }
                 
-//                 printf("above class_call lensing_delensed_derv_cl_ee_bb \n");
                  if(((ple->convergence_type == total && itr_index > 1
                       && cratio <= ple->convergence_criterion_itr) ||
                      (ple->convergence_type == every && itr_index > 1
@@ -3717,7 +3683,6 @@ schedule (static)
                  }
                 
             }
-//             printf("above class_call array_spline_table_lines \n");
             class_call(array_spline_table_lines(ple->l_dl,
                                                 ple->dl_size,
                                                 ple->cl_delens,
@@ -3728,7 +3693,6 @@ schedule (static)
                        ple->error_message,
                        ple->error_message);
             
-//             printf("above class_call dlm_splie2's (many) \n");            
             if(((ple->convergence_type == total && itr_index > 1
                  && cratio <= ple->convergence_criterion_itr) ||
                 (ple->convergence_type == every && itr_index > 1
@@ -3785,10 +3749,6 @@ schedule (static)
                                       ple->ddcl_dl_bb_pderv),
                            ple->error_message,
                            ple->error_message);
-                
-                
-//                 printf("we are entering setting up the ddcls for delens pderv");                
-//                 printf("we are safely out here\n");
                 
                 /*  
                 //No need to spline when calculating at every l
@@ -3909,7 +3869,6 @@ schedule (static)
                 */
                 
             }
-//             printf("we are safely out here\n");
             for (l=2; l<=ple->l_delensed_max; l++) {
                 
                 ll = (double)l;
@@ -3946,13 +3905,8 @@ schedule (static)
             if(ple->has_itr_delensing == _FALSE_) itr_index = ple->max_itr_steps + 1;
             
             ple->has_lens_noise_rcn = _FALSE_;
-//             printf("we are safely out here a\n");
         }
-//         printf("we are safely out here b\n");
     }
-//     printf("we are now cleaning up stuff 1\n");
-//     printf("we are now cleaning up stuff 1\n");
-//     printf("we are now cleaning up stuff 1\n");
     /*---- end of the main delensing extension --------*/
     
     /** - Free lots of stuff **/
@@ -3985,9 +3939,6 @@ schedule (static)
         free(d40);
         free(d4m4);
     }
-//     printf("we are now cleaning up stuff 2\n");
-//     printf("we are now cleaning up stuff 2\n");
-//     printf("we are now cleaning up stuff 2\n");
     
     if (ple->has_tt==_TRUE_)
         free(ksi);
@@ -4013,9 +3964,6 @@ schedule (static)
         free(cl_ee);
         free(cl_bb);
     }
-//     printf("we are now cleaning up stuff 3\n");
-//     printf("we are now cleaning up stuff 3\n");
-//     printf("we are now cleaning up stuff 3\n");
     
     if (ple->has_dl_tt==_TRUE_ && ple->has_delensed_cls == _TRUE_){ /* DLM */
         
@@ -4042,9 +3990,6 @@ schedule (static)
         free(cl_pp_obs);  /* DLM */
         free(cl_pp_cross);/* DLM */
     }
-//     printf("we are now cleaning up stuff 4\n");
-//     printf("we are now cleaning up stuff 4\n");
-//     printf("we are now cleaning up stuff 4\n");
     
     if (ple->calculate_pderivaties ==_TRUE_ && ple->has_delensed_cls == _TRUE_){
         
@@ -4057,9 +4002,6 @@ schedule (static)
         free(ksim_dl_derv); /* DLM */
         free(ksip_dl_derv); /* DLM */
     }
-//     printf("we are now cleaning up stuff 5\n");
-//     printf("we are now cleaning up stuff 5\n");
-//     printf("we are now cleaning up stuff 5\n");
     
     if(ple->calculate_derviaties_wrt_unlensed == _TRUE_){
     
@@ -4085,11 +4027,6 @@ schedule (static)
     free(cl_pp);
     /** - Exit **/
     
-//     printf("we are now cleaning up stuff 6\n");
-//     printf("we are now cleaning up stuff 6\n");
-//     printf("we are now cleaning up stuff 6\n");
-    
-    
     return _SUCCESS_;
     
 }
@@ -4111,7 +4048,6 @@ schedule (static)
 int lensing_free(
                  struct lensing * ple
                  ) {
-    if (ple->delensing_verbose > 2) /* DLM */ printf("we are at lensing_free \n");
     if (ple->has_lensed_cls == _TRUE_) {
         
         free(ple->l);
@@ -4460,7 +4396,6 @@ int lensing_indices(
         }
         else if(ple->has_nl_diag == _TRUE_) /* DLM */
         {
-            //            printf("DEBUG: we are inside has_nl_diag\n");
             
             /* only varriances for the lensing
              reconstruction noise are used. */
@@ -4490,14 +4425,12 @@ int lensing_indices(
             }
             else if(ple->has_nl_altr_itr == _TRUE_) /* DLM */
             {
-                //                printf("DEBUG: we are only updating the B modes when reconstructing noise iteratively\n");
                 ple->has_ln_rcn_eb = _TRUE_;
                 ple->has_ln_rcn_tb = _TRUE_;
             }
         }
         else if(ple->has_nl_eb == _TRUE_) /* DLM */
         {
-            //            printf("DEBUG: we are inside has_nl_diag\n");
             
             /* only varriances for the lensing
              reconstruction noise are used. */
@@ -4513,7 +4446,6 @@ int lensing_indices(
         ple->index_nl_minvar=ple->nlt_size;
         ple->nlt_size++;
     }
-    //    printf("DEBUG: ple->nlt_size = %d \n",ple->nlt_size);  /* DLM */
     
     /* number of multipoles */
     
@@ -4525,7 +4457,7 @@ int lensing_indices(
     
     if (index_l < phr->l_size_max) index_l++; /* one more point in order to be able to interpolate till ple->l_lensed_max */
     
-    ple->l_size = index_l;// SH: Hacking atm. +1;
+    ple->l_size = index_l; /* DLM */
     
     class_alloc(ple->l,ple->l_size*sizeof(double),ple->error_message);
     
@@ -4550,7 +4482,7 @@ int lensing_indices(
     
     if (index_l < phr->l_size_max) index_l++; /* DLM */
     
-    ple->dl_size = index_l;// SH: Hacking atm. +1;  /* DLM */
+    ple->dl_size = index_l; /* DLM */
     
     class_alloc(ple->l_dl,ple->dl_size*sizeof(double),ple->error_message);  /* DLM */
     
@@ -5246,13 +5178,6 @@ schedule (static)
             clp=0; clm=0;
             for (imu=0;imu<nmu;imu++) {
                 if(imu==0){
-//                 printf("l=%d \n",(int)ple->l_dl[index_l_2]);
-//                 printf("imu=%d \n",imu);
-//                 printf("ksip=%e\n",ksip[(int)ple->l_dl[index_l_2]][imu]);
-//                 printf("d22=%e\n",d22[imu][(int)ple->l_dl[index_l_1]]);
-//                 printf("d2m2=%e\n",d2m2[imu][(int)ple->l_dl[index_l_1]]);
-//                 printf("w8=%e\n",w8[imu]);
-//                 printf("ksim=%e\n",ksim[(int)ple->l_dl[index_l_2]][imu]);
                 }
                 clp += ksip[(int)ple->l_dl[index_l_2]][imu]*d22[imu][(int)ple->l_dl[index_l_1]]*w8[imu]; 
                 clm += ksim[(int)ple->l_dl[index_l_2]][imu]*d2m2[imu][(int)ple->l_dl[index_l_1]]*w8[imu]; 
@@ -5425,29 +5350,17 @@ schedule (static)
 
     for(index_l_1=0; index_l_1<ple->dl_size; index_l_1++){
         for(index_l_2=0; index_l_2<ple->dl_size; index_l_2++){
-//             printf("index_l_1=%d, index_l_2=%d \n",index_l_1,index_l_2);
             clp=0; clm=0;
             for (imu=0;imu<nmu;imu++) {
                 if(imu==0){
-//                     printf("l=%d \n",(int)ple->l_dl[index_l_2]);
-//                     printf("imu=%d \n",imu);
-//                     printf("ksip=%e\n",ksip[(int)ple->l_dl[index_l_2]][imu]);
-//                     printf("d22=%e\n",d22[imu][(int)ple->l_dl[index_l_1]]);
-//                     printf("d2m2=%e\n",d2m2[imu][(int)ple->l_dl[index_l_1]]);
-//                     printf("w8=%e\n",w8[imu]);
-//                     printf("ksim=%e\n",ksim[(int)ple->l_dl[index_l_2]][imu]);
                 }
                 clp += ksip[(int)ple->l_dl[index_l_2]][imu]*d22[imu][(int)ple->l_dl[index_l_1]]*w8[imu]; /* loop could be optimized */
                 clm += ksim[(int)ple->l_dl[index_l_2]][imu]*d2m2[imu][(int)ple->l_dl[index_l_1]]*w8[imu]; /* loop could be optimized */
             }
-//             printf("index_l_1=%d, index_l_2=%d \n",index_l_1,index_l_2);
             ple->cl_delens_derv_BB_EE[index_l_2][index_l_1]=(clp+clm)*_PI_;
-//             printf("added cl_delens_derv_BB_EE \n");
             ple->cl_delens_derv_BB_BB[index_l_2][index_l_1]=(clp-clm)*_PI_;
-//             printf("added cl_delens_derv_BB_BB \n");
         }
     }
-//     printf("we are returning from lensing_delensed_cl_ee_bb_dervB\n");
     return _SUCCESS_;
 }
 
@@ -6264,8 +6177,6 @@ int lensing_reconstr_nl_minvar(
     int l,imu,index_l;
     double ll;
     
-    // printf("DEBUG: we are inside lensing_reconstr_nl_minvar safely!\n");
-    
     ErrorMsg erreur;
     
     double *rat1, *rat2, *rat3, *rat4, *rat5, *rat6, *rat7, *rat8;
@@ -6453,14 +6364,11 @@ int lensing_reconstr_nl_minvar(
     class_alloc(rat33  ,(ple->l_lensed_max+1)*sizeof(double),erreur);
     
     
-    // printf("DEBUG: we are pass initializing all arrays!\n");
-    
     for (l=2; l<=ple->l_lensed_max; l++)
     {
         ll = (double)l;
         
         fac[l] = 2.*ll+1.;
-        // fac31,fac33,fac11v2,fac,fac21v2,fac32
         
         fac01[l]   = fac[l]*sqrt(ll*(ll+1.));
         fac01v2[l] = fac[l]*sqrt((ll+2.)*(ll-1.));
@@ -9023,7 +8931,6 @@ int external_cmb_spectra_init(struct lensing * ple, struct harmonic * phr){
             ple->cl_pp_ext[index_l] = clpp[index_l];
             /* ple->cl_pp_ext[index_l] = clpp[index_l]/pow(phr->T_cmb*1.e6,2);   */
             
-            // printf("%i %lf \n", index_l, cltt[index_l]);
         }
     }
     
@@ -9141,7 +9048,7 @@ int external_lensed_cmb_spectra_init(struct lensing * ple, struct harmonic * phr
         clee[n_data]   = this_clee;
         clbb[n_data]   = this_clbb;
         clpp[n_data]   = this_clpp;
-        // printf("%f %f ", this_l, this_pltn); // selim DEBUG DLM
+        
         n_data++;
         /* Check ascending order of the k's */
         if(n_data>1) {
