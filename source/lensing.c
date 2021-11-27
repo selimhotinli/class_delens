@@ -2217,12 +2217,12 @@ schedule (static)
                            ple->error_message);
             }
             if (ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->lensed_wrt_unlensed == _TRUE_){
-                class_call(lensing_lensed_cl_te_derv(ksiX_ln_derv,d20,w8,num_mu-1,ple),
-                          ple->error_message,
-                          ple->error_message);
-//                 class_call(lensing_lensed_cl_te_derv_all(ksiX_ln_derv,d20,w8,num_mu-1,ple),
-//                            ple->error_message,
-//                            ple->error_message);
+//                 class_call(lensing_lensed_cl_te_derv(ksiX_ln_derv,d20,w8,num_mu-1,ple),
+//                           ple->error_message,
+//                           ple->error_message);
+                class_call(lensing_lensed_cl_te_derv_all(ksiX_ln_derv,d20,w8,num_mu-1,ple),
+                           ple->error_message,
+                           ple->error_message);
             }
         }
         
@@ -2239,21 +2239,21 @@ schedule (static)
             
             if(ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->lensed_wrt_unlensed == _TRUE_){
                 
-                class_call(lensing_lensed_cl_ee_bb_dervE(ksip_ln_dervE,ksim_ln_dervE,d22,d2m2,w8,num_mu-1,ple),
-                           ple->error_message,
-                           ple->error_message);
+//                 class_call(lensing_lensed_cl_ee_bb_dervE(ksip_ln_dervE,ksim_ln_dervE,d22,d2m2,w8,num_mu-1,ple),
+//                            ple->error_message,
+//                            ple->error_message);
                 
-                class_call(lensing_lensed_cl_ee_bb_dervB(ksip_ln_dervB,ksim_ln_dervB,d22,d2m2,w8,num_mu-1,ple),
-                           ple->error_message,
-                           ple->error_message);
+//                 class_call(lensing_lensed_cl_ee_bb_dervB(ksip_ln_dervB,ksim_ln_dervB,d22,d2m2,w8,num_mu-1,ple),
+//                            ple->error_message,
+//                            ple->error_message);
                
-//                 class_call(lensing_lensed_cl_ee_bb_dervE_all(ksip_ln_dervE,ksim_ln_dervE,d22,d2m2,w8,num_mu-1,ple),
-//                            ple->error_message,
-//                            ple->error_message);
+                class_call(lensing_lensed_cl_ee_bb_dervE_all(ksip_ln_dervE,ksim_ln_dervE,d22,d2m2,w8,num_mu-1,ple),
+                           ple->error_message,
+                           ple->error_message);
                 
-//                 class_call(lensing_lensed_cl_ee_bb_dervB_all(ksip_ln_dervB,ksim_ln_dervB,d22,d2m2,w8,num_mu-1,ple),
-//                            ple->error_message,
-//                            ple->error_message);
+                class_call(lensing_lensed_cl_ee_bb_dervB_all(ksip_ln_dervB,ksim_ln_dervB,d22,d2m2,w8,num_mu-1,ple),
+                           ple->error_message,
+                           ple->error_message);
             }
         }
         
