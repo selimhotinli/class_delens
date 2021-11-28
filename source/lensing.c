@@ -2201,7 +2201,7 @@ schedule (static)
             }
 
             if (ple->calculate_derviaties_wrt_unlensed == _TRUE_ && ple->lensed_wrt_unlensed == _TRUE_){
-                class_call(lensing_lensed_cl_tt_derv(ksi_ln_derv,d00,w8,num_mu-1,ple),
+                class_call(lensing_lensed_cl_tt_derv_all(ksi_ln_derv,d00,w8,num_mu-1,ple),
                           ple->error_message,
                           ple->error_message);
             }
