@@ -19,7 +19,7 @@ This code can be used as a submodule for the Fisher forecasting tool software ht
 Using the code
 ==============================================
 
-In the standard way described in Ref.
+In the standard way described in README_CLASS.md
 
 ```
 make class
@@ -136,7 +136,7 @@ The aim of delensing is to manipulate observed CMB maps (such as <img src="http:
 Software implementation
 ==============================================
 
-We implement our delensing procedure as a modification of the lensing routine in the CLASS Boltzmann code Ref. 
+We implement our delensing procedure as a modification of the lensing routine in the CLASS Boltzmann code.
 Our goal is to provide a tool that allows accurate, stable, and efficient computation of the delensed CMB spectra and lensing reconstruction noise.
 In addition to benefiting from the specialised numerical routines available in the \texttt{CLASS} code, we use efficient real-space expressions introduced in ([Dvorkin et al.](https://arxiv.org/abs/0902.4413), [Smith et al.](https://arxiv.org/abs/1010.0048)) for the delensed spectra and lensing reconstruction quadratic estimators.
 These expressions can be evaluated at the cost of <img src="http://latex.codecogs.com/svg.latex?\mathcal{O}(\ell_{\textrm{max}}^2)" border="0"/> rather than <img src="http://latex.codecogs.com/svg.latex?\mathcal{O}(\ell_{\textrm{max}}^3)" border="0"/>, where <img src="http://latex.codecogs.com/svg.latex?\ell_{\textrm{max}}" border="0"/> is the maximum multipole used in the quadratic estimator calculation.
