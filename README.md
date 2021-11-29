@@ -1,7 +1,7 @@
 CLASS delens: Delensing module for the CLASS code 
 ==============================================
 
-Author: Selim C. Hotinli; Other major contributors: Joel Meyers, Cynthia Trendafilova
+Author: Selim C. Hotinli Joel Meyers, Cynthia Trendafilova
 
 Code produces delensed CMB spectra (TT, TE, EE and BB) and lensing-reconstruction noise for given CMB experiment specifications and cosmology. 
 
@@ -11,6 +11,10 @@ Delensed CMB spectra have sharper acoustic peaks and more prominent damping tail
 Delensing reduces B-mode power, aiding the search for primordial gravitational waves and allowing for lower variance reconstruction of lensing and other sources of secondary CMB anisotropies.
 Lensing-induced power spectrum covariances are reduced by delensing, simplifying analyses and improving constraints on primordial non-Gaussianities. 
 Please refer to [arXiv] for a detailed demonstration of the benefits of CMB delensing.
+
+This code can be used as a submodule for the Fisher forecasting tool software https://github.com/ctrendafilova/FisherLens. 
+
+
 
 Using the code
 ==============================================
