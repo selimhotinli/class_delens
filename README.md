@@ -1,7 +1,7 @@
 CLASS delens: Delensing module for the CLASS code 
 ==============================================
 
-Authors: Selim C. Hotinli Joel Meyers, Cynthia Trendafilova
+Authors: Selim C. Hotinli, Joel Meyers, Cynthia Trendafilova
 
 Code produces delensed CMB spectra (TT, TE, EE and BB) and lensing-reconstruction noise for given CMB experiment specifications and cosmology. 
 
