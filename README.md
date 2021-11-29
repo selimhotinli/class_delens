@@ -142,6 +142,3 @@ In addition to benefiting from the specialised numerical routines available in t
 These expressions can be evaluated at the cost of <img src="http://latex.codecogs.com/svg.latex?\mathcal{O}(\ell_{\textrm{max}}^2)" border="0"/> rather than <img src="http://latex.codecogs.com/svg.latex?\mathcal{O}(\ell_{\textrm{max}}^3)" border="0"/>, where <img src="http://latex.codecogs.com/svg.latex?\ell_{\textrm{max}}" border="0"/> is the maximum multipole used in the quadratic estimator calculation.
 This provides a significant increase in speed which is valuable for repeated calculations of iterative delensing as well as rapid exploration of the parameter space for a Markov chain Monte Carlo analysis, for example.
 This simplification is due to computing products of Wigner <img src="http://latex.codecogs.com/svg.latex?3j" border="0"/>-symbols in terms of Wigner <img src="http://latex.codecogs.com/svg.latex?d" border="0"/>-matrices. 
-
-
-<img src="http://latex.codecogs.com/svg.latex?\mathbf{d}(\boldsymbol{n})" border="0"/>
