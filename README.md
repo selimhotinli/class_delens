@@ -96,8 +96,8 @@ also, dont forget to choose e.g. ```convergence_criterion_itr = 1e-4```.
 
 If ```lensing reconstruction noise spectra type = external```: Lensing-reconstruction noise is taken externally. In this case please define the path to the lensing-reconstruction noise with ```command_for_lensing_noise_spec  = cat /User/directory/to/Lensing/noise.txt```
 
-<!-- Options regarding the derivatives of the lensed or delensed spectra -->
-## Options regarding the derivatives of the lensed or delensed spectra
+<!-- Options on derivatives of the lensed or delensed spectra -->
+## Options on derivatives of the lensed or delensed spectra
 
 If you wish to calculate the derivatives of the lensed and delensed spectra with respect to the unlensed spectra, please set
 
