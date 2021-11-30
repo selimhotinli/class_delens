@@ -53,7 +53,7 @@ In the case ```temperature noise spectra type``` is set to ```external```, pleas
 
 Same applies for the polarization noise.
 
-If the CMB noise is set to ```idealized```, set the properties of the temperature and polarization noise in radians with the options below (for example for 1 arminute beam and muK-arcminute for noise <img src="http://latex.codecogs.com/svg.latex?\Delta_T" border="0"/>).  
+If the CMB noise is set to ```idealized```, set the properties of the temperature and polarization noise in radians with the options below (for example for 1 arminute beam and muK-arcminute for noise <img src="http://latex.codecogs.com/svg.latex?\color{blue}\Delta_T" border="0"/>).  
 ```delta_noise = 0.000290888209```
 ```sigma_beam  = 0.000290888209```
 
@@ -125,13 +125,13 @@ Option ```delta_dl_max``` set the buffer between the lensed spectra and delensed
 Delensing primer
 ==============================================
 
-Gravitational lensing deflects CMB photons such that the lensed CMB temperature and polarization in line-of-sight direction <img src="http://latex.codecogs.com/svg.latex?\boldsymbol{d}(\boldsymbol{n})" border="0"/> are given by the unlensed CMB in a direction that differs from the line-of-sight direction by the lensing deflection <img src="http://latex.codecogs.com/svg.latex?\boldsymbol{d}(\boldsymbol{n})" border="0"/>.
-At lowest order, the deflection angle is a pure gradient <img src="http://latex.codecogs.com/svg.latex?\boldsymbol{d}(\boldsymbol{n})=\boldsymbol{\nabla}\phi(\boldsymbol{n})" border="0"/> where <img src="http://latex.codecogs.com/svg.latex?\phi" border="0"/> is the lensing potential. 
-For example, the lensed temperature field <img src="http://latex.codecogs.com/svg.latex?T^{\textrm{lensed}}" border="0"/> is given in terms of the unlensed temperature field <img src="http://latex.codecogs.com/svg.latex?T^{\textrm{unlensed}}" border="0"/> by
+Gravitational lensing deflects CMB photons such that the lensed CMB temperature and polarization in line-of-sight direction <img src="http://latex.codecogs.com/svg.latex?{\color{blue}\boldsymbol{d}(\boldsymbol{n})" border="0"/> are given by the unlensed CMB in a direction that differs from the line-of-sight direction by the lensing deflection <img src="http://latex.codecogs.com/svg.latex?\color{blue}\boldsymbol{d}(\boldsymbol{n})" border="0"/>.
+At lowest order, the deflection angle is a pure gradient <img src="http://latex.codecogs.com/svg.latex?\color{blue}\boldsymbol{d}(\boldsymbol{n})=\boldsymbol{\nabla}\phi(\boldsymbol{n})" border="0"/> where <img src="http://latex.codecogs.com/svg.latex?\color{blue}\phi" border="0"/> is the lensing potential. 
+For example, the lensed temperature field <img src="http://latex.codecogs.com/svg.latex?\color{blue}T^{\textrm{lensed}}" border="0"/> is given in terms of the unlensed temperature field <img src="http://latex.codecogs.com/svg.latex?\color{blue}T^{\textrm{unlensed}}" border="0"/> by
 
-<img src="http://latex.codecogs.com/svg.latex?T^{\textrm{lensed}}(\boldsymbol{n})=T^{\textrm{unlensed}}(\boldsymbol{n}+\boldsymbol{d}(\boldsymbol{n}))= T^{\textrm{unlensed}}(\boldsymbol{n}) + \boldsymbol{d}(\boldsymbol{n})\cdot\boldsymbol{\nabla}T^{\textrm{unlensed}}(\boldsymbol{n}) + \ldots \, ." border="0"/>
+<img src="http://latex.codecogs.com/svg.latex?\color{blue}T^{\textrm{lensed}}(\boldsymbol{n})=T^{\textrm{unlensed}}(\boldsymbol{n}+\boldsymbol{d}(\boldsymbol{n}))= T^{\textrm{unlensed}}(\boldsymbol{n}) + \boldsymbol{d}(\boldsymbol{n})\cdot\boldsymbol{\nabla}T^{\textrm{unlensed}}(\boldsymbol{n}) + \ldots \, ." border="0"/>
 
-The aim of delensing is to manipulate observed CMB maps (such as <img src="http://latex.codecogs.com/svg.latex?T^{\textrm{obs}}" border="0"/>) and estimates of the lensing deflection <img src="http://latex.codecogs.com/svg.latex?\boldsymbol{d}^{\textrm{obs}}" border="0"/> to reverse this remapping in order to recover an estimate of the unlensed CMB.
+The aim of delensing is to manipulate observed CMB maps (such as <img src="http://latex.codecogs.com/svg.latex?\color{blue}T^{\textrm{obs}}" border="0"/>) and estimates of the lensing deflection <img src="http://latex.codecogs.com/svg.latex?\color{blue}\boldsymbol{d}^{\textrm{obs}}" border="0"/> to reverse this remapping in order to recover an estimate of the unlensed CMB.
 
 Software implementation
 ==============================================
@@ -139,6 +139,6 @@ Software implementation
 We implement our delensing procedure as a modification of the lensing routine in the CLASS Boltzmann code.
 Our goal is to provide a tool that allows accurate, stable, and efficient computation of the delensed CMB spectra and lensing reconstruction noise.
 In addition to benefiting from the specialised numerical routines available in the \texttt{CLASS} code, we use efficient real-space expressions introduced in ([Dvorkin et al.](https://arxiv.org/abs/0902.4413), [Smith et al.](https://arxiv.org/abs/1010.0048)) for the delensed spectra and lensing reconstruction quadratic estimators.
-These expressions can be evaluated at the cost of <img src="http://latex.codecogs.com/svg.latex?\mathcal{O}(\ell_{\textrm{max}}^2)" border="0"/> rather than <img src="http://latex.codecogs.com/svg.latex?\mathcal{O}(\ell_{\textrm{max}}^3)" border="0"/>, where <img src="http://latex.codecogs.com/svg.latex?\ell_{\textrm{max}}" border="0"/> is the maximum multipole used in the quadratic estimator calculation.
+These expressions can be evaluated at the cost of <img src="http://latex.codecogs.com/svg.latex?\color{blue}\mathcal{O}(\ell_{\textrm{max}}^2)" border="0"/> rather than <img src="http://latex.codecogs.com/svg.latex?\color{blue}\mathcal{O}(\ell_{\textrm{max}}^3)" border="0"/>, where <img src="http://latex.codecogs.com/svg.latex?\color{blue}\ell_{\textrm{max}}" border="0"/> is the maximum multipole used in the quadratic estimator calculation.
 This provides a significant increase in speed which is valuable for repeated calculations of iterative delensing as well as rapid exploration of the parameter space for a Markov chain Monte Carlo analysis, for example.
-This simplification is due to computing products of Wigner <img src="http://latex.codecogs.com/svg.latex?3j" border="0"/>-symbols in terms of Wigner <img src="http://latex.codecogs.com/svg.latex?d" border="0"/>-matrices. 
+This simplification is due to computing products of Wigner <img src="http://latex.codecogs.com/svg.latex?\color{blue}3j" border="0"/>-symbols in terms of Wigner <img src="http://latex.codecogs.com/svg.latex?\color{blue}d" border="0"/>-matrices. 
