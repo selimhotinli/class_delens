@@ -133,13 +133,13 @@ struct lensing {
   int l_size;       /**< number of l values */
 
   int * l_max_lt;    /**< last multipole (given as an input) at which
-		    we want to output \f$ C_l \f$'s for a given mode and type */
+                        we want to output \f$ C_l \f$'s for a given mode and type */
 
   double * l;       /**< table of multipole values l[index_l] */
   double * l_unlensed;
   double * cl_lens; /**< table of anisotropy spectra for each
-			   multipole and types,
-			   cl[index_l * ple->lt_size + index_lt] */
+                       multipole and types,
+                       cl[index_l * ple->lt_size + index_lt] */
 
   double ** cl_lens_derv_TT_TT;
   double ** cl_lens_derv_TE_TE;
@@ -328,821 +328,219 @@ struct lensing {
 extern "C" {
 #endif
 
-	int lensing_cl_at_l(
-						struct lensing * ple,
-						int l,
-						double * cl_lensed
-						);
-
-	int delensing_cl_at_l(
-						  struct lensing * ple,
-						  int l,
-						  double * cl_delensed
-						  );
-
-	int lensing_init(
-					 struct precision * ppr,
-					 struct perturbations * ppt,
-					 struct harmonic * phr,
-					 struct fourier * pfo,
-					 struct lensing * ple
-					 );
-
-	int lensing_free(
-					 struct lensing * ple
-					 );
-
-	int lensing_indices(
-						struct precision * ppr,
-						struct harmonic * phr,
-						struct lensing * ple
-						);
-
-	int lensing_lensed_cl_tt(
-							 double *ksi,
-							 double **d00,
-							 double *w8,
-							 int nmu,
-							 struct lensing * ple
-							 );
-    int lensing_lensed_cl_tt_derv(
-                             double **ksi,
-                             double **d00,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-    int lensing_lensed_cl_tt_derv_all(
-                             double **ksi,
-                             double **d00,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-    int lensing_delensed_cl_tt_derv(
-                             double **ksi_dlu_derv,
-                             double **d00,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-    int lensing_delensed_cl_tt_derv_all(
-                             double **ksi_dlu_derv,
-                             double **d00,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-
-	int lensing_delensed_cl_tt(
-							   double *ksi_dl,
-							   double *hla,
-							   double **d00,
-							   double *w8,
-							   int nmu,
-							   struct lensing * ple
-							   );
-
-	int lensing_lensed_cl_te(
-							 double *ksiX,
-							 double **d20,
-							 double *w8,
-							 int nmu,
-							 struct lensing * ple
-							 );
-    int lensing_lensed_cl_te_derv(
-                             double **ksiX,
-                             double **d20,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-    int lensing_lensed_cl_te_derv_all(
-                             double **ksiX,
-                             double **d20,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-    int lensing_delensed_cl_te_derv(
-                             double **ksiX_dlu_derv,
-                             double **d20,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-    int lensing_delensed_cl_te_derv_all(
-                             double **ksiX_dlu_derv,
-                             double **d20,
-                             double *w8,
-                             int nmu,
-                             struct lensing * ple
-                             );
-                             
-	int lensing_delensed_cl_te(
-							   double *ksiX_dl,
-							   double *hla,
-							   double *hla_P,
-							   double **d20,
-							   double *w8,
-							   int nmu,
-							   struct lensing * ple
-							   );
-
-	int lensing_lensed_cl_ee_bb(
-								double *ksip,
-								double *ksim,
-								double **d22,
-								double **d2m2,
-								double *w8,
-								int nmu,
-								struct lensing * ple
-								);
-
-    int lensing_lensed_cl_ee_bb_dervE(
-                                double **ksip,
-                                double **ksim,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-    int lensing_lensed_cl_ee_bb_dervE_all(
-                                double **ksip,
-                                double **ksim,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-    int lensing_delensed_cl_ee_bb_dervE(
-                                double **ksip_dlu_dervE,
-                                double **ksim_dlu_dervE,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-    int lensing_delensed_cl_ee_bb_dervE_all(
-                                double **ksip_dlu_dervE,
-                                double **ksim_dlu_dervE,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-
-    int lensing_lensed_cl_ee_bb_dervB(
-                                double **ksip,
-                                double **ksim,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-    int lensing_lensed_cl_ee_bb_dervB_all(
-                                double **ksip,
-                                double **ksim,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-    int lensing_delensed_cl_ee_bb_dervB(
-                                double **ksip_dlu_dervB,
-                                double **ksim_dlu_dervB,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-    int lensing_delensed_cl_ee_bb_dervB_all(
-                                double **ksip_dlu_dervB,
-                                double **ksim_dlu_dervB,
-                                double **d22,
-                                double **d2m2,
-                                double *w8,
-                                int nmu,
-                                struct lensing * ple
-                                );
-
-	int lensing_delensed_cl_ee_bb(
-								  double *ksip_dl,
-								  double *ksim_dl,
-								  double *hla,
-								  double **d22,
-								  double **d2m2,
-								  double *w8,
-								  int nmu,
-								  struct lensing * ple
-								  );
-
-	int lensing_addback_cl_tt(
-							  struct lensing *ple,
-							  double *cl_tt
-							  );
-//    int lensing_addback_cl_tt_derv(
-//                              struct lensing *ple,
-//                              double *cl_tt
-//                              );
-
-	int lensing_addback_cl_te(
-							  struct lensing *ple,
-							  double *cl_te
-							  );
-//    int lensing_addback_cl_te_derv(
-//                              struct lensing *ple,
-//                              double *cl_te
-//                              );
-
-	int lensing_addback_cl_ee_bb(
-								 struct lensing *ple,
-								 double *cl_ee,
-								 double *cl_bb
-								 );
-//    int lensing_addback_cl_ee_bb_dervE(
-//                                 struct lensing *ple,
-//                                 double *cl_ee,
-//                                 double *cl_bb
-//                                 );
-//    int lensing_addback_cl_ee_bb_dervB(
-//                                 struct lensing *ple,
-//                                 double *cl_ee,
-//                                 double *cl_bb
-//                                 );
-
-
-	int lensing_addback_cl_dl_tt(
-							  struct lensing *ple,
-							  double *cl_tt
-							  );
-
-	int lensing_addback_cl_dl_te(
-							  struct lensing *ple,
-							  double *cl_te
-							  );
-
-	int lensing_addback_cl_dl_ee_bb(
-								 struct lensing *ple,
-								 double *cl_ee,
-								 double *cl_bb
-								 );
-
-	int lensing_X000(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double * sigma2,
-					 double ** X000
-					 );
-
-	int lensing_Xp000(
-					  double * mu,
-					  int num_mu,
-					  int lmax,
-					  double * sigma2,
-					  double ** Xp000
-					  );
-
-	int lensing_X220(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double * sigma2,
-					 double ** X220
-					 );
-
-	int lensing_X022(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double * sigma2,
-					 double ** X022
-					 );
-
-	int lensing_Xp022(
-					  double * mu,
-					  int num_mu,
-					  int lmax,
-					  double * sigma2,
-					  double ** Xp022
-					  );
-
-	int lensing_X121(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double * sigma2,
-					 double ** X121
-					 );
-
-	int lensing_X132(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double * sigma2,
-					 double ** X132
-					 );
-
-	int lensing_X242(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double * sigma2,
-					 double ** X242
-					 );
-
-	int lensing_d00(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d00
-					);
-
-	int lensing_d01(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d01
-					);
-
-	int lensing_d11(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d11
-					);
-
-	int lensing_d1m1(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d1m1
-					 );
-
-	int lensing_d2m2(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d2m2
-					 );
-
-	int lensing_d22(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d22
-					);
-
-	int lensing_d2m1(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d2m1
-					 );
-
-	int lensing_d21(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d21
-					);
-
-	int lensing_d20(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d20
-					);
-
-	int lensing_d30(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d30
-					);
-
-	int lensing_d31(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d3m1
-					);
-
-	int lensing_d3m1(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d3m1
-					 );
-
-	int lensing_d3m2(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d3m2
-					 );
-
-	int lensing_d32(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d32
-					);
-
-	int lensing_d3m3(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d3m3
-					 );
-
-	int lensing_d33(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d33
-					);
-
-	int lensing_d40(
-					double * mu,
-					int num_mu,
-					int lmax,
-					double ** d40
-					);
-
-	int lensing_d4m2(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d4m2
-					 );
-
-	int lensing_d4m4(
-					 double * mu,
-					 int num_mu,
-					 int lmax,
-					 double ** d4m4
-					 );
-
-	int idealized_temperature_noise_spectrum_init(
-												  struct lensing *ple,
-												  struct harmonic * phr
-												  );
-
-	int idealized_polarization_noise_spectrum_init(
-												   struct lensing *ple,
-												   struct harmonic * phr
-												   );
-
-	int external_lens_recon_noise_spectrum_init(
-												struct lensing *ple
-												);
-
-	int external_temperature_noise_spectrum_init(
-												 struct lensing *ple,
-												 struct harmonic * phr
-												 );
-
-	int external_polarization_noise_spectrum_init(
-												  struct lensing *ple,
-												  struct harmonic * phr
-												  );
-	int external_cmb_spectra_init(
-												  struct lensing *ple,
-												  struct harmonic * phr
-												  );
-	int external_lensed_cmb_spectra_init(
-												  struct lensing *ple,
-												  struct harmonic * phr
-												  );
-
-	int lensing_reconstruction_noise_tt(
-										double **d00,
-										double **d01,
-										double **d11,
-										double **d1m1,
-										double *w8,
-										int nmu,
-										double *cl_tt_unlensed,
-										double *cl_tt_lensed,
-										struct lensing * ple,
-										struct harmonic * phr);
-
-	int lensing_reconstruction_noise_eb(
-										double **d3m3,
-										double **d33,
-										double **d3m1,
-										double **d31,
-										double **d1m1,
-										double **d11,
-										double **d2m2,
-										double **d22,
-										double **d2m1,
-										double **d21,
-										double **d3m2,
-										double **d32,
-										double *w8,
-										int nmu,
-										double *cl_ee_th,
-										double *cl_bb_th,
-										double *cl_ee_ln,
-										double *cl_bb_ln,
-										struct lensing * ple,
-										struct harmonic * phr
-										);
-
-	int lensing_reconstruction_noise_tb(
-										double **d11,
-										double **d1m1,
-										double **d22,
-										double **d2m2,
-										double **d31,
-										double **d3m1,
-										double **d33,
-										double **d3m3,
-										double *w8,
-										int nmu,
-										double *cl_te_th,
-										double *cl_tt_ln,
-										double *cl_bb_ln,
-										struct lensing * ple,
-										struct harmonic * phr);
-
-	int lensing_reconstruction_noise_te(
-										double **d00,
-										double **d01,
-										double **d1m1,
-										double **d11,
-										double **d2m1,
-										double **d21,
-										double **d2m2,
-										double **d22,
-										double **d30,
-										double **d3m1,
-										double **d31,
-										double **d3m3,
-										double **d33,
-										double *w8,
-										int nmu,
-										double *cl_te_th,
-										double *cl_tt_ln,
-										double *cl_ee_ln,
-										struct lensing * ple,
-										struct harmonic * phr
-										);
-
-	int lensing_reconstruction_noise_pp(
-										double **d3m3,
-										double **d33,
-										double **d3m1,
-										double **d31,
-										double **d1m1,
-										double **d11,
-										double **d2m2,
-										double **d22,
-										double **d2m1,
-										double **d21,
-										double **d3m2,
-										double **d32,
-										double *w8,
-										int nmu,
-										double *cl_pol_th,
-										double *cl_pol_ln,
-										int ee_or_bb,
-										struct lensing * ple,
-										struct harmonic * phr
-										);
-	int lensing_reconst_nl_at_l(
-								struct lensing * ple,
-								int l,
-								double * nl_rec
-								);
-
-	int lensing_reconstr_nl_tt(
-							   double *zeta_t00,
-							   double *zeta_t01,
-							   double *zeta_t0m1,
-							   double *zeta_t11,
-							   double *zeta_t1m1,
-							   double **d11,
-							   double **d1m1,
-							   double *w8,
-							   int nmu,
-							   struct lensing *ple);
-
-	int lensing_reconstr_nl_minvar(
-							   double **d3m3,
-							   double **d33,
-							   double **d3m2,
-							   double **d32,
-							   double **d3m1,
-							   double **d31,
-							   double **d30,
-							   double **d2m2,
-							   double **d22,
-							   double **d2m1,
-							   double **d21,
-							   double **d20,
-							   double **d1m1,
-							   double **d11,
-							   double **d01,
-							   double **d00,
-							   double *w8,
-							   int nmu,
-							   double *cl_tt_th,double *cl_tt_ln,
-							   double *cl_te_th,double *cl_te_ln,
-							   double *cl_ee_th,double *cl_ee_ln,
-							   double *cl_bb_th,double *cl_bb_ln,
-							   struct lensing * ple,
-							   struct harmonic * phr
-							   );
-
-	int lensing_reconstr_nl_EB(
-							   double **d3m3,  double **d33,
-							   double **d3m2,  double **d32,
-							   double **d3m1,  double **d31,
-							   double **d2m2,  double **d22,
-							   double **d2m1,  double **d21,
-							   double **d1m1,  double **d11,
-							   double **d00,
-							   double *w8,
-							   int nmu,
-							   double *cl_ee_th,double *cl_ee_ln,
-							   double *cl_bb_th,double *cl_bb_ln,
-							   struct lensing * ple,
-							   struct harmonic * phr
-							   );
-
-	int dl_spectra_bb_ala_smith(
-								double **d3m3,  double **d33,
-								double **d3m2,  double **d32,
-								double **d3m1,  double **d31,
-								double **d2m2,  double **d22,
-								double **d1m1,  double **d11,
-								double **d00,
-								double *w8,
-								int nmu,
-								double *cl_ee_th,double *cl_ee_ln,
-								double *cl_pp,double *nl_ebeb,
-								struct lensing * ple,
-								struct harmonic * phr
-								);
-
-
-	int lensing_delensed_derv_cl_tt(
-									double **ksi_dl_derv,
-									double *hla,
-									double **d00,
-									double *w8,
-									int nmu,
-									struct lensing * ple
-									);
-
-	int lensing_addback_derv_cl_dl_tt(
-									  struct lensing * ple,
-									  double *cl_tt);
-
-	int lensing_delensed_derv_cl_te(
-						   double **ksiX_dl_derv,
-						   double *hla,
-						   double *hla_P,
-						   double **d20,
-						   double *w8,
-						   int nmu,
-						   struct lensing * ple
-						   );
-
-	int lensing_addback_derv_cl_dl_te(
-									  struct lensing * ple,
-									  double *cl_te);
-
-	int lensing_delensed_derv_cl_ee_bb(
-									   double **ksip_dl_derv,
-									   double **ksim_dl_derv,
-									   double *hla,
-									   double **d22,
-									   double **d2m2,
-									   double *w8,
-									   int nmu,
-									   struct lensing * ple
-									   );
-
-	int lensing_addback_derv_cl_dl_ee_bb(
-										 struct lensing * ple,
-										 double * cl_ee,
-										 double * cl_bb);
-
-
-	int delensing_derv_cl_at_l(
-							   struct lensing * ple,
-							   int l,
-							   int k,
-							   double * cl_delensed
-							   );
-
-	int delensing_derv_cl_tt_at_l(
-								  struct lensing * ple,
-								  double k,
-								  double l,
-								  double * cl_derv_delensed);
-
-    int lensing_derv_cl_tt_tt_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_lens_derv_TT_TT);
-
-    int lensing_derv_dl_cl_tt_tt_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_delens_derv_TT_TT);
-
-	int delensing_derv_cl_te_at_l( /* DLM */
-								  struct lensing * ple,
-								  double k,
-								  double l,
-								  double * cl_derv_delensed);
-
-    int lensing_derv_cl_te_te_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_lens_derv_TE_TE);
-
-    int lensing_derv_dl_cl_te_te_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_delens_derv_TE_TE);
-
-	int delensing_derv_cl_ee_at_l( /* DLM */
-								  struct lensing * ple,
-								  double k,
-								  double l,
-								  double * cl_derv_delensed);
-
-    int lensing_derv_cl_ee_ee_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_lens_derv_EE_EE);
-
-    int lensing_derv_dl_cl_ee_ee_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_delens_derv_EE_EE);
-
-    int lensing_derv_cl_ee_bb_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_lens_derv_EE_BB);
-
-    int lensing_derv_dl_cl_ee_bb_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_delens_derv_EE_BB);
-
-    int lensing_derv_cl_bb_ee_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_lens_derv_BB_EE);
-
-    int lensing_derv_dl_cl_bb_ee_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_delens_derv_BB_EE);
-
-    int lensing_derv_cl_bb_bb_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_lens_derv_BB_BB);
-
-    int lensing_derv_dl_cl_bb_bb_at_l(
-                                  struct lensing * ple,
-                                  double k,
-                                  double l,
-                                  double * cl_delens_derv_BB_BB);
-
-	int delensing_derv_cl_bb_at_l( /* DLM */
-								  struct lensing * ple,
-								  double k,
-								  double l,
-								  double * cl_derv_delensed);
+  int lensing_cl_at_l(
+                      struct lensing * ple,
+                      int l,
+                      double * cl_lensed
+                      );
+
+  int lensing_init(
+                   struct precision * ppr,
+                   struct perturbations * ppt,
+                   struct harmonic * phr,
+                   struct fourier * pfo,
+                   struct lensing * ple
+                   );
+
+  int lensing_free(
+                   struct lensing * ple
+                   );
+
+  int lensing_indices(
+                      struct precision * ppr,
+                      struct harmonic * phr,
+                      struct lensing * ple
+                      );
+
+  int lensing_lensed_cl_tt(
+                           double *ksi,
+                           double **d00,
+                           double *w8,
+                           int nmu,
+                           struct lensing * ple
+                           );
+
+  int lensing_lensed_cl_te(
+                           double *ksiX,
+                           double **d20,
+                           double *w8,
+                           int nmu,
+                           struct lensing * ple
+                           );
+
+  int lensing_lensed_cl_ee_bb(
+                              double *ksip,
+                              double *ksim,
+                              double **d22,
+                              double **d2m2,
+                              double *w8,
+                              int nmu,
+                              struct lensing * ple
+                              );
+  int lensing_addback_cl_tt(
+                            struct lensing *ple,
+                            double *cl_tt
+                            );
+
+  int lensing_addback_cl_te(
+                            struct lensing *ple,
+                            double *cl_te
+                            );
+
+  int lensing_addback_cl_ee_bb(
+                               struct lensing *ple,
+                               double *cl_ee,
+                               double *cl_bb
+                               );
+
+
+  int lensing_X000(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double * sigma2,
+                   double ** X000
+                   );
+
+  int lensing_Xp000(
+                    double * mu,
+                    int num_mu,
+                    int lmax,
+                    double * sigma2,
+                    double ** Xp000
+                    );
+
+  int lensing_X220(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double * sigma2,
+                   double ** X220
+                   );
+
+  int lensing_X022(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double * sigma2,
+                   double ** X022
+                   );
+
+  int lensing_Xp022(
+                    double * mu,
+                    int num_mu,
+                    int lmax,
+                    double * sigma2,
+                    double ** Xp022
+                    );
+
+  int lensing_X121(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double * sigma2,
+                   double ** X121
+                   );
+
+  int lensing_X132(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double * sigma2,
+                   double ** X132
+                   );
+
+  int lensing_X242(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double * sigma2,
+                   double ** X242
+                   );
+
+  int lensing_d00(
+                  double * mu,
+                  int num_mu,
+                  int lmax,
+                  double ** d00
+                  );
+
+  int lensing_d11(
+                  double * mu,
+                  int num_mu,
+                  int lmax,
+                  double ** d11
+                  );
+
+  int lensing_d1m1(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double ** d1m1
+                   );
+
+  int lensing_d2m2(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double ** d2m2
+                   );
+
+  int lensing_d22(
+                  double * mu,
+                  int num_mu,
+                  int lmax,
+                  double ** d22
+                  );
+
+  int lensing_d20(
+                  double * mu,
+                  int num_mu,
+                  int lmax,
+                  double ** d20
+                  );
+
+  int lensing_d31(
+                  double * mu,
+                  int num_mu,
+                  int lmax,
+                  double ** d3m1
+                  );
+
+  int lensing_d3m1(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double ** d3m1
+                   );
+
+  int lensing_d3m3(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double ** d3m3
+                   );
+
+  int lensing_d40(
+                  double * mu,
+                  int num_mu,
+                  int lmax,
+                  double ** d40
+                  );
+
+  int lensing_d4m2(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double ** d4m2
+                   );
+
+  int lensing_d4m4(
+                   double * mu,
+                   int num_mu,
+                   int lmax,
+                   double ** d4m4
+                   );
 
 #ifdef __cplusplus
 }

@@ -1284,7 +1284,7 @@ int harmonic_compute_cl(
 
 }
 
-  /* deprecated functions (since v2.8) */
+/* deprecated functions (since v2.8) */
 
 /**
  * Matter power spectrum for arbitrary redshift and for all initial conditions.
@@ -1610,7 +1610,7 @@ int harmonic_sigma_cb(
   return _SUCCESS_;
 }
 
-  /* deprecated functions (since v2.1) */
+/* deprecated functions (since v2.1) */
 
 /**
  * Obsolete function, superseeded by perturbations_sources_at_tau()
@@ -1632,7 +1632,7 @@ int harmonic_tk_at_z(
 
 
   class_stop(phr->error_message,
-             "The function harmonic_tk_at_z() is obsolete, use instead perturbations_sources_at_tau(), it does the same");
+             "The function harmonic_tk_at_z() is obsolete, use instead perturbations_sources_at_z(), it does the same");
 
   return _SUCCESS_;
 
@@ -1659,10 +1659,10 @@ int harmonic_tk_at_k_and_z(
                            ) {
 
   class_stop(phr->error_message,
-             "The function harmonic_tk_at_k_and_z() is obsolete, use instead perturbations_sources_at_tau(), it does the same provided that you interpolate its output at some wavenumber k");
+             "The function harmonic_tk_at_k_and_z() is obsolete, use instead perturbations_sources_at_k_and_z(), it does the same");
 
   return _SUCCESS_;
 
 }
 
-  /* end deprecated functions */
+/* end deprecated functions */
