@@ -520,8 +520,6 @@ int thermodynamics_helium_from_bbn(
               -pvecback[pba->index_bg_rho_g])
     /(7./8.*pow(4./11.,4./3.)*pvecback[pba->index_bg_rho_g]);
 
-  free(pvecback);
-
   //  printf("Neff early = %g, Neff at bbn: %g\n",pba->Neff,Neff_bbn);
 
   /** - compute Delta N_eff as defined in bbn file, i.e. \f$ \Delta N_{eff}=0\f$ means \f$ N_{eff}=3.046\f$.
@@ -665,6 +663,7 @@ int thermodynamics_helium_from_bbn(
 
   /** - Take into account impact of varying alpha on helium fraction */
   if (pth->has_varconst == _TRUE_) {
+    // printf("Value when has_varconst == TRUE: %f \n",pvecback[pba->index_bg_varc_alpha]);
     pth->YHe *= pth->bbn_alpha_sensitivity * (pvecback[pba->index_bg_varc_alpha]-1.)+1.;
   }
 
@@ -675,6 +674,7 @@ int thermodynamics_helium_from_bbn(
   free(ddYHe);
   free(YHe_at_deltaN);
   free(ddYHe_at_deltaN);
+  free(pvecback);
 
   return _SUCCESS_;
 }

@@ -1875,12 +1875,12 @@ int output_tk(
     /** - second, open only the relevant files, and write a heading in each of them */
 
     class_call(perturbations_output_data_at_z(pba,
-                                              ppt,
-                                              pop->output_format,
-                                              pop->z_pk[index_z],
-                                              number_of_titles,
-                                              data
-                                              ),
+                                         ppt,
+                                         pop->output_format,
+                                         pop->z_pk[index_z],
+                                         number_of_titles,
+                                         data
+                                         ),
                ppt->error_message,
                pop->error_message);
     number_of_titles = get_number_of_titles(titles);
@@ -1905,7 +1905,7 @@ int output_tk(
         
         /** - second, open only the relevant files, and write a heading in each of them */
         
-        class_call(perturbations_output_data(pba,
+        class_call(perturbations_output_data_at_z(pba,
                                              ppt,
                                              pop->output_format,
                                              pop->z_pk[index_z],
@@ -2092,186 +2092,6 @@ int output_thermodynamics(
 
 }
 
-
-int output_perturbations(
-                         struct background * pba,
-                         struct perturbations * ppt,
-                         struct output * pop
-                         ) {
-
-  FILE * out;
-  FileName file_name;
-  int index_ikout, index_md;
-  double k;
-
-  for (index_ikout=0; index_ikout<ppt->k_output_values_num; index_ikout++){
-
-    if (ppt->has_scalars == _TRUE_){
-      index_md = ppt->index_md_scalars;
-      k = ppt->k[index_md][ppt->index_k_output_values[index_md*ppt->k_output_values_num+index_ikout]];
-      sprintf(file_name,"%s%s%d%s",pop->root,"perturbations_k",index_ikout,"_s.dat");
-      class_open(out, file_name, "w", ppt->error_message);
-      fprintf(out,"#scalar perturbations for mode k = %.*e Mpc^(-1)\n",_OUTPUTPRECISION_,k);
-      output_print_data(out,
-                        ppt->scalar_titles,
-                        ppt->scalar_perturbations_data[index_ikout],
-                        ppt->size_scalar_perturbation_data[index_ikout]);
-
-      fclose(out);
-    }
-    if (ppt->has_vectors == _TRUE_){
-      index_md = ppt->index_md_vectors;
-      k = ppt->k[index_md][ppt->index_k_output_values[index_md*ppt->k_output_values_num+index_ikout]];
-      sprintf(file_name,"%s%s%d%s",pop->root,"perturbations_k",index_ikout,"_v.dat");
-      class_open(out, file_name, "w", ppt->error_message);
-      fprintf(out,"#vector perturbations for mode k = %.*e Mpc^(-1)\n",_OUTPUTPRECISION_,k);
-      output_print_data(out,
-                        ppt->vector_titles,
-                        ppt->vector_perturbations_data[index_ikout],
-                        ppt->size_vector_perturbation_data[index_ikout]);
-
-      fclose(out);
-    }
-    if (ppt->has_tensors == _TRUE_){
-      index_md = ppt->index_md_tensors;
-      k = ppt->k[index_md][ppt->index_k_output_values[index_md*ppt->k_output_values_num+index_ikout]];
-      sprintf(file_name,"%s%s%d%s",pop->root,"perturbations_k",index_ikout,"_t.dat");
-      class_open(out, file_name, "w", ppt->error_message);
-      fprintf(out,"#tensor perturbations for mode k = %.*e Mpc^(-1)\n",_OUTPUTPRECISION_,k);
-      output_print_data(out,
-                        ppt->tensor_titles,
-                        ppt->tensor_perturbations_data[index_ikout],
-                        ppt->size_tensor_perturbation_data[index_ikout]);
-
-      fclose(out);
-    }
-
-
-  }
-  return _SUCCESS_;
-
-}
-
-int output_primordial(
-                      struct perturbations * ppt,
-                      struct primordial * ppm,
-                      struct output * pop
-                      ) {
-  FileName file_name;
-  FILE * out;
-  char titles[_MAXTITLESTRINGLENGTH_]={0};
-  double * data;
-  int size_data, number_of_titles;
-
-  sprintf(file_name,"%s%s",pop->root,"primordial_Pk.dat");
-
-  class_call(primordial_output_titles(ppt,ppm,titles),
-             ppm->error_message,
-             pop->error_message);
-  number_of_titles = get_number_of_titles(titles);
-  size_data = number_of_titles*ppm->lnk_size;
-  class_alloc(data,sizeof(double)*size_data,pop->error_message);
-  class_call(primordial_output_data(ppt,
-                                    ppm,
-                                    number_of_titles,
-                                    data),
-             ppm->error_message,
-             pop->error_message);
-
-  class_open(out,file_name,"w",pop->error_message);
-  if (pop->write_header == _TRUE_) {
-    fprintf(out,"# Dimensionless primordial spectrum, equal to [k^3/2pi^2] P(k) \n");
-  }
-
-  output_print_data(out,
-                    titles,
-                    data,
-                    size_data);
-
-  free(data);
-  fclose(out);
-
-  return _SUCCESS_;
-}
-
-int output_heating(struct injection* pin, struct noninjection* pni, struct output * pop) {
-
-  /** Local variables*/
-  FileName file_name_injection;
-  FILE * out_injection;
-  FileName file_name_noninjection;
-  FILE * out_noninjection;
-
-  char titles_injection[_MAXTITLESTRINGLENGTH_]={0};
-
-  double * data_injection;
-  int size_data_injection;
-  int number_of_titles_injection;
-
-  char titles_noninjection[_MAXTITLESTRINGLENGTH_]={0};
-
-  double * data_noninjection;
-  int size_data_noninjection;
-  int number_of_titles_noninjection;
-
-  if (pop->write_exotic_injection == _TRUE_){
-
-    /* File name */
-    sprintf(file_name_injection,"%s%s",pop->root,"exotic_injection.dat");
-
-    /* Titles */
-    class_call(injection_output_titles(pin,titles_injection),
-               pin->error_message,
-               pin->error_message);
-    number_of_titles_injection = get_number_of_titles(titles_injection);
-
-    /* Data array */
-    size_data_injection = number_of_titles_injection*pin->z_size;
-    class_alloc(data_injection,
-                sizeof(double)*size_data_injection,
-                pop->error_message);
-    class_call(injection_output_data(pin,
-                                     number_of_titles_injection,
-                                     data_injection),
-               pin->error_message,
-               pop->error_message);
-    number_of_titles = get_number_of_titles(titles);
-    size_data = number_of_titles*pba->bt_size;
-    class_alloc(data,sizeof(double)*size_data,pop->error_message);
-    class_call(background_output_data(pba,
-                                      number_of_titles,
-                                      data),
-               pba->error_message,
-               pop->error_message);
-
-    if (pop->write_header == _TRUE_){
-      fprintf(out_injection,"# Table of energy injection and deposition from exotic processes \n");
-      fprintf(out_injection,"# Heat is dE/dt|dep_h\n");
-    }
-    
-    output_print_data(backfile,
-                      titles,
-                      data,
-                      size_data);
-    
-    free(data);
-    fclose(backfile);
-    
-    return _SUCCESS_;
-    
-}
-    output_print_data(out_injection,
-                      titles_injection,
-                      data_injection,
-                      size_data_injection);
-    free(data_injection);
-    fclose(out_injection);
-
-  }
-
-  if (pop->write_noninjection == _TRUE_){
-
-
 int output_perturbations(
                          struct background * pba,
                          struct perturbations * ppt,
@@ -2356,9 +2176,10 @@ int output_primordial(
                                       data),
                ppm->error_message,
                pop->error_message);
-
-    if (pop->write_header == _TRUE_){
-      fprintf(out_noninjection,"# Table of non-injected energy influencing the photon spectral distortions \n");
+    
+    class_open(out,file_name,"w",pop->error_message);
+    if (pop->write_header == _TRUE_) {
+        fprintf(out,"# Dimensionless primordial spectrum, equal to [k^3/2pi^2] P(k) \n");
     }
     
     output_print_data(out,
@@ -2482,90 +2303,98 @@ int output_distortions(
                        struct distortions * psd,
                        struct output * pop
                        ) {
-
-  /** Local variables*/
-  FileName file_name_heat, file_name_distortion;
-  FILE * out_heat, * out_distortion;
-
-  char titles_heat[_MAXTITLESTRINGLENGTH_]={0};
-  char titles_distortion[_MAXTITLESTRINGLENGTH_]={0};
-
-  double * data_heat, * data_distortion;
-  int size_data_heat, size_data_distortion;
-  int number_of_titles_heat, number_of_titles_distortion;
-
-  if (pop->write_distortions==_TRUE_ && psd->has_distortions == _TRUE_){
-
-    /* File name */
-    sprintf(file_name_heat,"%s%s",pop->root,"sd_heating.dat");
-
-    /* Titles */
-    class_call(distortions_output_heat_titles(psd,titles_heat),
-               psd->error_message,
-               pop->error_message);
-    number_of_titles_heat = get_number_of_titles(titles_heat);
-
-    /* Data array */
-    size_data_heat = number_of_titles_heat*psd->z_size;
-    class_alloc(data_heat,
-                sizeof(double)*size_data_heat,
-                pop->error_message);
-    class_call(distortions_output_heat_data(psd,
-                                            number_of_titles_heat,
-                                            data_heat),
-               psd->error_message,
-               pop->error_message);
-
-    /* File IO */
-    class_open(out_heat,
-               file_name_heat,
-               "w",
-               pop->error_message);
-
-    if (pop->write_header == _TRUE_){
-      fprintf(out_heat,"# Heat is d(Q/rho)/dz\n");
-      fprintf(out_heat,"# LHeat is d(Q/rho)/dlnz\n");
-      fprintf(out_heat,"#\n");
-    }
-
-    output_print_data(out_heat,
-                      titles_heat,
-                      data_heat,
-                      size_data_heat);
-    free(data_heat);
-    fclose(out_heat);
-
-    /* File name */
-    sprintf(file_name_distortion,"%s%s",pop->root,"sd_distortions.dat");
-
-    /* Titles */
-    class_call(distortions_output_sd_titles(psd,titles_distortion),
-               psd->error_message,
-               pop->error_message);
-    number_of_titles_distortion = get_number_of_titles(titles_distortion);
-
-    /* Data array */
-    size_data_distortion = number_of_titles_distortion*psd->x_size;
-    class_alloc(data_distortion,
-                sizeof(double)*size_data_distortion,
-                pop->error_message);
-    class_call(distortions_output_sd_data(psd,
-                                          number_of_titles_distortion,
-                                          data_distortion),
-               psd->error_message,
-               pop->error_message);
-
-    /* File IO */
-    class_open(out_distortion,
-               file_name_distortion,
-               "w",
-               pop->error_message);
-
-    if (pop->write_header == _TRUE_){
-      fprintf(out_distortion,"# SD_tot is the amplitude of the overall spectral distortion (SD)\n");
-      fprintf(out_distortion,"# The SD[i] are the amplitudes of the individual SDs\n");
-      fprintf(out_distortion,"# The SDs are given in units [10^-26 W m^-2 Hz^-1 sr^-1] \n");
-      fprintf(out_distortion,"#\n");
+    
+    /** Local variables*/
+    FileName file_name_heat, file_name_distortion;
+    FILE * out_heat, * out_distortion;
+    
+    char titles_heat[_MAXTITLESTRINGLENGTH_]={0};
+    char titles_distortion[_MAXTITLESTRINGLENGTH_]={0};
+    
+    double * data_heat, * data_distortion;
+    int size_data_heat, size_data_distortion;
+    int number_of_titles_heat, number_of_titles_distortion;
+    
+    if(pop->write_distortions==_TRUE_ && psd->has_distortions == _TRUE_){
+        
+        /* File name */
+        sprintf(file_name_heat,"%s%s",pop->root,"sd_heating.dat");
+        
+        /* Titles */
+        class_call(distortions_output_heat_titles(psd,titles_heat),
+                   psd->error_message,
+                   pop->error_message);
+        number_of_titles_heat = get_number_of_titles(titles_heat);
+        
+        /* Data array */
+        size_data_heat = number_of_titles_heat*psd->z_size;
+        class_alloc(data_heat,
+                    sizeof(double)*size_data_heat,
+                    pop->error_message);
+        class_call(distortions_output_heat_data(psd,
+                                                number_of_titles_heat,
+                                                data_heat),
+                   psd->error_message,
+                   pop->error_message);
+        
+        /* File IO */
+        class_open(out_heat,
+                   file_name_heat,
+                   "w",
+                   pop->error_message);
+        
+        if(pop->write_header == _TRUE_){
+            fprintf(out_heat,"# Heat is d(Q/rho)/dz\n");
+            fprintf(out_heat,"# LHeat is d(Q/rho)/dlnz\n");
+            fprintf(out_heat,"#\n");
+        }
+        
+        output_print_data(out_heat,
+                          titles_heat,
+                          data_heat,
+                          size_data_heat);
+        free(data_heat);
+        fclose(out_heat);
+        
+        /* File name */
+        sprintf(file_name_distortion,"%s%s",pop->root,"sd_distortions.dat");
+        
+        /* Titles */
+        class_call(distortions_output_sd_titles(psd,titles_distortion),
+                   psd->error_message,
+                   pop->error_message);
+        number_of_titles_distortion = get_number_of_titles(titles_distortion);
+        
+        /* Data array */
+        size_data_distortion = number_of_titles_distortion*psd->x_size;
+        class_alloc(data_distortion,
+                    sizeof(double)*size_data_distortion,
+                    pop->error_message);
+        class_call(distortions_output_sd_data(psd,
+                                              number_of_titles_distortion,
+                                              data_distortion),
+                   psd->error_message,
+                   pop->error_message);
+        
+        /* File IO */
+        class_open(out_distortion,
+                   file_name_distortion,
+                   "w",
+                   pop->error_message);
+        
+        if(pop->write_header == _TRUE_){
+            fprintf(out_distortion,"# SD_tot is the amplitude of the overall spectral distortion (SD)\n");
+            fprintf(out_distortion,"# The SD[i] are the amplitudes of the individual SDs\n");
+            fprintf(out_distortion,"# The SDs are given in units [10^-26 W m^-2 Hz^-1 sr^-1] \n");
+            fprintf(out_distortion,"#\n");
+        }
+        
+        output_print_data(out_distortion,
+                          titles_distortion,
+                          data_distortion,
+                          size_data_distortion);
+        free(data_distortion);
+        fclose(out_distortion);
     }
     
     return _SUCCESS_;

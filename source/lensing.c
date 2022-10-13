@@ -788,32 +788,11 @@ int lensing_init(
         /* Integrate correlation function difference on [0,pi/16] */
         num_mu = (ple->l_unlensed_max * 2 )/16;
     }
-  }
+    //    printf("DEBUG: num_mu = %d \n",num_mu);
+    /** - allocate array of \f$ \mu \f$ values, as well as quadrature weights */
 
-  /** - Compute \f$ d^l_{mm'} (\mu) \f$*/
-
-  icount = 0;
-  class_alloc(d00,
-              num_mu*sizeof(double*),
-              ple->error_message);
-
-  class_alloc(d11,
-              num_mu*sizeof(double*),
-              ple->error_message);
-
-  class_alloc(d1m1,
-              num_mu*sizeof(double*),
-              ple->error_message);
-
-  class_alloc(d2m2,
-              num_mu*sizeof(double*),
-              ple->error_message);
-  icount += 4*num_mu*(ple->l_unlensed_max+1);
-
-  if (ple->has_te==_TRUE_) {
-
-    class_alloc(d20,
-                num_mu*sizeof(double*),
+    class_alloc(mu,
+                num_mu*sizeof(double),
                 ple->error_message);
     /* Reserve last element of mu for mu=1, needed for sigma2 */
     mu[num_mu-1] = 1.0;
@@ -1703,234 +1682,14 @@ int lensing_init(
                     ple->error_message);
     }
     if (ple->has_ee==_TRUE_ || ple->has_bb==_TRUE_) {
-      cl_ee[l] = cl_unlensed[ple->index_lt_ee];
-      cl_bb[l] = cl_unlensed[ple->index_lt_bb];
-    }
-  }
-
-  for (index_md = 0; index_md < phr->md_size; index_md++) {
-
-    if (phr->md_size > 1)
-      free(cl_md[index_md]);
-
-    if (phr->ic_size[index_md] > 1)
-      free(cl_md_ic[index_md]);
-
-  }
-
-  free(cl_md_ic);
-  free(cl_md);
-
-  /** - Compute sigma2\f$(\mu)\f$ and Cgl2(\f$\mu\f$) **/
-
-  //debut = omp_get_wtime();
-#pragma omp parallel for                        \
-  private (index_mu,l)                          \
-  schedule (static)
-  for (index_mu=0; index_mu<num_mu; index_mu++) {
-
-    Cgl[index_mu]=0;
-    Cgl2[index_mu]=0;
-
-    for (l=2; l<=ple->l_unlensed_max; l++) {
-
-      Cgl[index_mu] += (2.*l+1.)*l*(l+1.)*
-        cl_pp[l]*d11[index_mu][l];
-
-      Cgl2[index_mu] += (2.*l+1.)*l*(l+1.)*
-        cl_pp[l]*d1m1[index_mu][l];
-
-    }
-
-    Cgl[index_mu] /= 4.*_PI_;
-    Cgl2[index_mu] /= 4.*_PI_;
-
-  }
-
-  for (index_mu=0; index_mu<num_mu-1; index_mu++) {
-    /* Cgl(1.0) - Cgl(mu) */
-    sigma2[index_mu] = Cgl[num_mu-1] - Cgl[index_mu];
-  }
-  //fin = omp_get_wtime();
-  //cpu_time = (fin-debut);
-  //printf("time in Cgl,Cgl2,sigma2=%4.3f s\n",cpu_time);
-
-
-  /** - compute ksi, ksi+, ksi-, ksiX */
-
-  /** - --> ksi is for TT **/
-  if (ple->has_tt==_TRUE_) {
-
-    class_calloc(ksi,
-                 (num_mu-1),
-                 sizeof(double),
-                 ple->error_message);
-  }
-
-  /** - --> ksiX is for TE **/
-  if (ple->has_te==_TRUE_) {
-
-    class_calloc(ksiX,
-                 (num_mu-1),
-                 sizeof(double),
-                 ple->error_message);
-  }
-
-  /** - --> ksip, ksim for EE, BB **/
-  if (ple->has_ee==_TRUE_ || ple->has_bb==_TRUE_) {
-
-    class_calloc(ksip,
-                 (num_mu-1),
-                 sizeof(double),
-                 ple->error_message);
-
-    class_calloc(ksim,
-                 (num_mu-1),
-                 sizeof(double),
-                 ple->error_message);
-  }
-
-  for (l=2;l<=ple->l_unlensed_max;l++) {
-
-    ll = (double)l;
-    sqrt1[l]=sqrt((ll+2)*(ll+1)*ll*(ll-1));
-    sqrt2[l]=sqrt((ll+2)*(ll-1));
-    sqrt3[l]=sqrt((ll+3)*(ll-2));
-    sqrt4[l]=sqrt((ll+4)*(ll+3)*(ll-2.)*(ll-3));
-    sqrt5[l]=sqrt(ll*(ll+1));
-  }
-
-
-  //debut = omp_get_wtime();
-#pragma omp parallel for                                                \
-  private (index_mu,l,ll,res,resX,resp,resm,lens,lensp,lensm,           \
-           fac,fac1,X_000,X_p000,X_220,X_022,X_p022,X_121,X_132,X_242)	\
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu-1;index_mu++) {
-
-    for (l=2;l<=ple->l_unlensed_max;l++) {
-
-      ll = (double)l;
-
-      fac = ll*(ll+1)/4.;
-      fac1 = (2*ll+1)/(4.*_PI_);
-
-      /* In the following we will keep terms of the form (sigma2)^k*(Cgl2)^m
-         with k+m <= 2 */
-
-      X_000 = exp(-fac*sigma2[index_mu]);
-      X_p000 = -fac*X_000;
-      /* X_220 = 0.25*sqrt1[l] * exp(-(fac-0.5)*sigma2[index_mu]); */
-      X_220 = 0.25*sqrt1[l] * X_000; /* Order 0 */
-      /* next 5 lines useless, but avoid compiler warning 'may be used uninitialized' */
-      X_242=0.;
-      X_132=0.;
-      X_121=0.;
-      X_p022=0.;
-      X_022=0.;
-
-      if (ple->has_te==_TRUE_ || ple->has_ee==_TRUE_ || ple->has_bb==_TRUE_) {
-        /* X_022 = exp(-(fac-1.)*sigma2[index_mu]); */
-        X_022 = X_000 * (1+sigma2[index_mu]*(1+0.5*sigma2[index_mu])); /* Order 2 */
-        X_p022 = -(fac-1.)*X_022; /* Old versions were missing the
-                                     minus sign in this line, which introduced a very small error
-                                     on the high-l C_l^TE lensed spectrum [credits for bug fix:
-                                     Selim Hotinli] */
-
-        /* X_242 = 0.25*sqrt4[l] * exp(-(fac-5./2.)*sigma2[index_mu]); */
-        X_242 = 0.25*sqrt4[l] * X_000; /* Order 0 */
-        if (ple->has_ee==_TRUE_ || ple->has_bb==_TRUE_) {
-
-          /* X_121 = - 0.5*sqrt2[l] * exp(-(fac-2./3.)*sigma2[index_mu]);
-             X_132 = - 0.5*sqrt3[l] * exp(-(fac-5./3.)*sigma2[index_mu]); */
-          X_121 = -0.5*sqrt2[l] * X_000 * (1+2./3.*sigma2[index_mu]); /* Order 1 */
-          X_132 = -0.5*sqrt3[l] * X_000 * (1+5./3.*sigma2[index_mu]); /* Order 1 */
-        }
-      }
-
-
-      if (ple->has_tt==_TRUE_) {
-
-        res = fac1*cl_tt[l];
-
-        lens = (X_000*X_000*d00[index_mu][l] +
-                X_p000*X_p000*d1m1[index_mu][l]
-                *Cgl2[index_mu]*8./(ll*(ll+1)) +
-                (X_p000*X_p000*d00[index_mu][l] +
-                 X_220*X_220*d2m2[index_mu][l])
-                *Cgl2[index_mu]*Cgl2[index_mu]);
-        if (ppr->accurate_lensing == _FALSE_) {
-          /* Remove unlensed correlation function */
-          lens -= d00[index_mu][l];
-        }
-        res *= lens;
-        ksi[index_mu] += res;
-      }
-
-      if (ple->has_te==_TRUE_) {
-
-        resX = fac1*cl_te[l];
-
-
-        lens = ( X_022*X_000*d20[index_mu][l] +
-                 Cgl2[index_mu]*2.*X_p000/sqrt5[l] *
-                 (X_121*d11[index_mu][l] + X_132*d3m1[index_mu][l]) +
-                 0.5 * Cgl2[index_mu] * Cgl2[index_mu] *
-                 ( ( 2.*X_p022*X_p000+X_220*X_220 ) *
-                   d20[index_mu][l] + X_220*X_242*d4m2[index_mu][l] ) );
-        if (ppr->accurate_lensing == _FALSE_) {
-          lens -= d20[index_mu][l];
-        }
-        resX *= lens;
-        ksiX[index_mu] += resX;
-      }
-
-      if (ple->has_ee==_TRUE_ || ple->has_bb==_TRUE_) {
-
-        resp = fac1*(cl_ee[l]+cl_bb[l]);
-        resm = fac1*(cl_ee[l]-cl_bb[l]);
-
-        lensp = ( X_022*X_022*d22[index_mu][l] +
-                  2.*Cgl2[index_mu]*X_132*X_121*d31[index_mu][l] +
-                  Cgl2[index_mu]*Cgl2[index_mu] *
-                  ( X_p022*X_p022*d22[index_mu][l] +
-                    X_242*X_220*d40[index_mu][l] ) );
-
-        lensm = ( X_022*X_022*d2m2[index_mu][l] +
-                  Cgl2[index_mu] *
-                  ( X_121*X_121*d1m1[index_mu][l] +
-                    X_132*X_132*d3m3[index_mu][l] ) +
-                  0.5 * Cgl2[index_mu] * Cgl2[index_mu] *
-                  ( 2.*X_p022*X_p022*d2m2[index_mu][l] +
-                    X_220*X_220*d00[index_mu][l] +
-                    X_242*X_242*d4m4[index_mu][l] ) );
-        if (ppr->accurate_lensing == _FALSE_) {
-          lensp -= d22[index_mu][l];
-          lensm -= d2m2[index_mu][l];
-        }
-        resp *= lensp;
-        resm *= lensm;
-        ksip[index_mu] += resp;
-        ksim[index_mu] += resm;
-      }
-    }
-  }
-  //fin = omp_get_wtime();
-  //cpu_time = (fin-debut);
-  //printf("time in ksi=%4.3f s\n",cpu_time);
-
-
-  /** - compute lensed \f$ C_l\f$'s by integration */
-  //debut = omp_get_wtime();
-  if (ple->has_tt==_TRUE_) {
-    class_call(lensing_lensed_cl_tt(ksi,d00,w8,num_mu-1,ple),
-               ple->error_message,
-               ple->error_message);
-    if (ppr->accurate_lensing == _FALSE_) {
-      class_call(lensing_addback_cl_tt(ple,cl_tt),
-                 ple->error_message,
-                 ple->error_message);
+        
+        class_alloc(cl_ee,
+                    (ple->l_unlensed_max+1)*sizeof(double),
+                    ple->error_message);
+        
+        class_alloc(cl_bb,
+                    (ple->l_unlensed_max+1)*sizeof(double),
+                    ple->error_message);
     }
     
     class_alloc(cl_pp,
@@ -4987,14 +4746,6 @@ schedule (static)
     return _SUCCESS_;
 }
 
-  for (index_l=0; index_l<ple->l_size; index_l++){
-    cle=0;
-    for (imu=0;imu<nmu;imu++) {
-      cle += ksi[imu]*d00[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
-    }
-    return _SUCCESS_;
-}
-
 int lensing_delensed_cl_tt_derv_all(
                               double **ksi,
                               double **d00,
@@ -5161,10 +4912,32 @@ schedule (static)
     return _SUCCESS_;
 }
 
-  for (index_l=0; index_l < ple->l_size; index_l++){
-    clte=0;
-    for (imu=0;imu<nmu;imu++) {
-      clte += ksiX[imu]*d20[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
+int lensing_delensed_cl_te_derv(
+                                double **ksiX,
+                                double **d20,
+                                double *w8,
+                                int nmu,
+                                struct lensing * ple
+                                ) {
+    
+    double clte;
+    int imu;
+    int index_l_1;
+    int index_l_2;
+    
+    /** Integration by Gauss-Legendre quadrature. **/
+#pragma omp parallel for                        \
+private (imu,index_l_1,index_l_2,clte)         \
+schedule (static)
+    
+    for(index_l_1=0; index_l_1<ple->l_size; index_l_1++){
+        for(index_l_2=0; index_l_2<ple->l_size; index_l_2++){
+            clte=0;
+            for (imu=0;imu<nmu;imu++) {
+                clte += ksiX[(int)ple->l[index_l_2]][imu]*d20[imu][(int)ple->l[index_l_1]]*w8[imu]; /* loop could be optimized */
+            }
+            ple->cl_delens_derv_TE_TE[index_l_2][index_l_1]=clte*2.0*_PI_;
+        }
     }
     return _SUCCESS_;
 }
@@ -5346,15 +5119,6 @@ schedule (static)
             ple->cl_lens_derv_EE_EE[index_l_1][index_l_2]=(clp+clm)*_PI_;
             ple->cl_lens_derv_EE_BB[index_l_1][index_l_2]=(clp-clm)*_PI_;
         }
-    }
-    return _SUCCESS_;
-}
-
-  for (index_l=0; index_l < ple->l_size; index_l++){
-    clp=0; clm=0;
-    for (imu=0;imu<nmu;imu++) {
-      clp += ksip[imu]*d22[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
-      clm += ksim[imu]*d2m2[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
     }
     return _SUCCESS_;
 }
@@ -7834,21 +7598,23 @@ int lensing_d20(
         fac4[l] = sqrt(2./(2*ll+3));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    dlm1=1.0/sqrt(2.); /* l=0 */
-    d00[index_mu][0]=dlm1*sqrt(2.);
-    dl=mu[index_mu] * sqrt(3./2.); /*l=1*/
-    d00[index_mu][1]=dl*sqrt(2./3.);
-    for (l=1;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d00 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*mu[index_mu]*dl - fac2[l]*dlm1;
-      d00[index_mu][l+1] = dlp1 * fac3[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d20[index_mu][0]=0;
+        dlm1=0.; /*l=1*/
+        d20[index_mu][1]=0;
+        dl=sqrt(15.)/4.*(1-mu[index_mu]*mu[index_mu]); /*l=2*/
+        d20[index_mu][2] = dl * sqrt(2./5.);
+        for(l=2;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*mu[index_mu]*dl - fac3[l]*dlm1;
+            d20[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
     free(fac1); free(fac3); free(fac4);
     return _SUCCESS_;
@@ -7889,26 +7655,27 @@ int lensing_d30(
         fac4[l] = sqrt(2./(2.*ll+3.));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d11[index_mu][0]=0;
-    dlm1=(1.0+mu[index_mu])/2. * sqrt(3./2.); /*l=1*/
-    d11[index_mu][1]=dlm1 * sqrt(2./3.);
-    dl=(1.0+mu[index_mu])/2.*(2.0*mu[index_mu]-1.0) * sqrt(5./2.); /*l=2*/
-    d11[index_mu][2] = dl * sqrt(2./5.);
-    for (l=2;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d11 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*(mu[index_mu]-fac2[l])*dl - fac3[l]*dlm1;
-      d11[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d30[index_mu][0]=0.;
+        d30[index_mu][1]=0.;
+        dlm1=0.; /*l=2*/
+        d30[index_mu][2]=0.;
+        dl= sqrt(35./2.)*sqrt(1.-mu[index_mu]*mu[index_mu])*sqrt(1.-mu[index_mu]*mu[index_mu])*sqrt(1.-mu[index_mu]*mu[index_mu])/4.; /*l=3*/
+        d30[index_mu][3] = dl * sqrt(2./7.);
+        for(l=3;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*mu[index_mu]*dl - fac3[l]*dlm1;
+            d30[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
-  }
-  free(fac1); free(fac2); free(fac3); free(fac4);
-  return _SUCCESS_;
+    free(fac1); free(fac3); free(fac4);
+    return _SUCCESS_;
 }
 
 /**
@@ -7946,26 +7713,27 @@ int lensing_d31(
         fac4[l] = sqrt(2./(2*ll+3));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d1m1[index_mu][0]=0;
-    dlm1=(1.0-mu[index_mu])/2. * sqrt(3./2.); /*l=1*/
-    d1m1[index_mu][1]=dlm1 * sqrt(2./3.);
-    dl=(1.0-mu[index_mu])/2.*(2.0*mu[index_mu]+1.0) * sqrt(5./2.); /*l=2*/
-    d1m1[index_mu][2] = dl * sqrt(2./5.);
-    for (l=2;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d1m1 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*(mu[index_mu]+fac2[l])*dl - fac3[l]*dlm1;
-      d1m1[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d31[index_mu][0]=0;
+        d31[index_mu][1]=0;
+        dlm1=0.; /*l=2*/
+        d31[index_mu][2]=0;
+        dl=sqrt(105./2.)*(1+mu[index_mu])*(1+mu[index_mu])*(1-mu[index_mu])/8.; /*l=3*/
+        d31[index_mu][3] = dl * sqrt(2./7.);
+        for(l=3;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*(mu[index_mu]-fac2[l])*dl - fac3[l]*dlm1;
+            d31[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
-  }
-  free(fac1); free(fac2); free(fac3); free(fac4);
-  return _SUCCESS_;
+    free(fac1); free(fac2); free(fac3); free(fac4);
+    return _SUCCESS_;
 }
 
 /**
@@ -8003,83 +7771,27 @@ int lensing_d3m1(
         fac4[l] = sqrt(2./(2*ll+3));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d2m2[index_mu][0]=0;
-    dlm1=0.; /*l=1*/
-    d2m2[index_mu][1]=0;
-    dl=(1.0-mu[index_mu])*(1.0-mu[index_mu])/4. * sqrt(5./2.); /*l=2*/
-    d2m2[index_mu][2] = dl * sqrt(2./5.);
-    for (l=2;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d2m2 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*(mu[index_mu]+fac2[l])*dl - fac3[l]*dlm1;
-      d2m2[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d3m1[index_mu][0]=0;
+        d3m1[index_mu][1]=0;
+        dlm1=0.; /*l=2*/
+        d3m1[index_mu][2]=0;
+        dl=sqrt(105./2.)*(1+mu[index_mu])*(1-mu[index_mu])*(1-mu[index_mu])/8.; /*l=3*/
+        d3m1[index_mu][3] = dl * sqrt(2./7.);
+        for(l=3;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*(mu[index_mu]+fac2[l])*dl - fac3[l]*dlm1;
+            d3m1[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
-  }
-  free(fac1); free(fac2); free(fac3); free(fac4);
-  return _SUCCESS_;
-}
-
-/**
- * This routine computes the d22 term
- *
- * @param mu     Input: Vector of cos(beta) values
- * @param num_mu Input: Number of cos(beta) values
- * @param lmax   Input: maximum multipole
- * @param d22    Input/output: Result is stored here
- *
- * Wigner d-functions, computed by recurrence
- * actual recurrence on \f$ \sqrt{(2l+1)/2} d^l_{mm'} \f$ for stability
- * Formulae from Kostelec & Rockmore 2003
- **/
-
-int lensing_d22(
-                double * mu,
-                int num_mu,
-                int lmax,
-                double ** d22
-                ) {
-  double ll, dlm1, dl, dlp1;
-  int index_mu, l;
-  double *fac1, *fac2, *fac3, *fac4;
-  ErrorMsg erreur;
-  class_alloc(fac1,lmax*sizeof(double),erreur);
-  class_alloc(fac2,lmax*sizeof(double),erreur);
-  class_alloc(fac3,lmax*sizeof(double),erreur);
-  class_alloc(fac4,lmax*sizeof(double),erreur);
-  for (l=2;l<lmax;l++) {
-    ll = (double) l;
-    fac1[l] = sqrt((2*ll+3)/(2*ll+1))*(ll+1)*(2*ll+1)/((ll-1)*(ll+3));
-    fac2[l] = 4.0/(ll*(ll+1));
-    fac3[l] = sqrt((2*ll+3)/(2*ll-1))*(ll-2)*(ll+2)/((ll-1)*(ll+3))*(ll+1)/ll;
-    fac4[l] = sqrt(2./(2*ll+3));
-  }
-#pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d22[index_mu][0]=0;
-    dlm1=0.; /*l=1*/
-    d22[index_mu][1]=0;
-    dl=(1.0+mu[index_mu])*(1.0+mu[index_mu])/4. * sqrt(5./2.); /*l=2*/
-    d22[index_mu][2] = dl * sqrt(2./5.);
-    for (l=2;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*(mu[index_mu]-fac2[l])*dl - fac3[l]*dlm1;
-      d22[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
-    }
-  }
-  free(fac1); free(fac2); free(fac3); free(fac4);
-  return _SUCCESS_;
+    free(fac1); free(fac2); free(fac3); free(fac4);
+    return _SUCCESS_;
 }
 
 /*-----------------DLM--------------------*/
@@ -8120,26 +7832,27 @@ int lensing_d3m2(
         fac4[l] = sqrt(2./(2*ll+3));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d20[index_mu][0]=0;
-    dlm1=0.; /*l=1*/
-    d20[index_mu][1]=0;
-    dl=sqrt(15.)/4.*(1-mu[index_mu]*mu[index_mu]); /*l=2*/
-    d20[index_mu][2] = dl * sqrt(2./5.);
-    for (l=2;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*mu[index_mu]*dl - fac3[l]*dlm1;
-      d20[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d3m2[index_mu][0]=0;
+        d3m2[index_mu][1]=0;
+        dlm1=0.; /*l=2*/
+        d3m2[index_mu][2]=0;
+        dl=sqrt(7./2.)*(sqrt(3./2.)/4.)*(sqrt(1.+mu[index_mu])*sqrt(1.-mu[index_mu]))*(1.-mu[index_mu])*(1.-mu[index_mu]); /*l=3*/
+        d3m2[index_mu][3] = dl * sqrt(2./7.);
+        for(l=3;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*(mu[index_mu]+fac2[l])*dl - fac3[l]*dlm1;
+            d3m2[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
-  }
-  free(fac1); free(fac3); free(fac4);
-  return _SUCCESS_;
+    free(fac1); free(fac2); free(fac3); free(fac4);
+    return _SUCCESS_;
 }
 /*---------------------------------------*/
 
@@ -8181,27 +7894,27 @@ int lensing_d32(
         fac4[l] = sqrt(2./(2*ll+3));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d31[index_mu][0]=0;
-    d31[index_mu][1]=0;
-    dlm1=0.; /*l=2*/
-    d31[index_mu][2]=0;
-    dl=sqrt(105./2.)*(1+mu[index_mu])*(1+mu[index_mu])*(1-mu[index_mu])/8.; /*l=3*/
-    d31[index_mu][3] = dl * sqrt(2./7.);
-    for (l=3;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*(mu[index_mu]-fac2[l])*dl - fac3[l]*dlm1;
-      d31[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d32[index_mu][0]=0;
+        d32[index_mu][1]=0;
+        dlm1=0.; /*l=2*/
+        d32[index_mu][2]=0;
+        dl=sqrt(7./2.)*(sqrt(3./2.)/4.)*(sqrt(1.-mu[index_mu])*sqrt(1.+mu[index_mu]))* (1.+mu[index_mu])*(1.+mu[index_mu]); /*l=3*/
+        d32[index_mu][3] = dl * sqrt(2./7.);
+        for(l=3;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*(mu[index_mu]-fac2[l])*dl - fac3[l]*dlm1;
+            d32[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
-  }
-  free(fac1); free(fac2); free(fac3); free(fac4);
-  return _SUCCESS_;
+    free(fac1); free(fac2); free(fac3); free(fac4);
+    return _SUCCESS_;
 }
 /*---------------------------------------*/
 
@@ -8241,27 +7954,27 @@ int lensing_d3m3(
         fac4[l] = sqrt(2./(2*ll+3));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d3m1[index_mu][0]=0;
-    d3m1[index_mu][1]=0;
-    dlm1=0.; /*l=2*/
-    d3m1[index_mu][2]=0;
-    dl=sqrt(105./2.)*(1+mu[index_mu])*(1-mu[index_mu])*(1-mu[index_mu])/8.; /*l=3*/
-    d3m1[index_mu][3] = dl * sqrt(2./7.);
-    for (l=3;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*(mu[index_mu]+fac2[l])*dl - fac3[l]*dlm1;
-      d3m1[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d3m3[index_mu][0]=0;
+        d3m3[index_mu][1]=0;
+        dlm1=0.; /*l=2*/
+        d3m3[index_mu][2]=0;
+        dl=sqrt(7./2.)*(1-mu[index_mu])*(1-mu[index_mu])*(1-mu[index_mu])/8.; /*l=3*/
+        d3m3[index_mu][3] = dl * sqrt(2./7.);
+        for(l=3;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*(mu[index_mu]+fac2[l])*dl - fac3[l]*dlm1;
+            d3m3[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
-  }
-  free(fac1); free(fac2); free(fac3); free(fac4);
-  return _SUCCESS_;
+    free(fac1); free(fac2); free(fac3); free(fac4);
+    return _SUCCESS_;
 }
 
 
@@ -8303,27 +8016,27 @@ int lensing_d33(
         fac4[l] = sqrt(2./(2*ll+3));
     }
 #pragma omp parallel for                        \
-  private (index_mu,dlm1,dl,dlp1,l,ll)          \
-  schedule (static)
-
-  for (index_mu=0;index_mu<num_mu;index_mu++) {
-    d3m3[index_mu][0]=0;
-    d3m3[index_mu][1]=0;
-    dlm1=0.; /*l=2*/
-    d3m3[index_mu][2]=0;
-    dl=sqrt(7./2.)*(1-mu[index_mu])*(1-mu[index_mu])*(1-mu[index_mu])/8.; /*l=3*/
-    d3m3[index_mu][3] = dl * sqrt(2./7.);
-    for (l=3;l<lmax;l++){
-      ll=(double) l;
-      /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
-      dlp1 = fac1[l]*(mu[index_mu]+fac2[l])*dl - fac3[l]*dlm1;
-      d3m3[index_mu][l+1] = dlp1 * fac4[l];
-      dlm1 = dl;
-      dl = dlp1;
+private (index_mu,dlm1,dl,dlp1,l,ll)          \
+schedule (static)
+    
+    for (index_mu=0;index_mu<num_mu;index_mu++) {
+        d33[index_mu][0]=0;
+        d33[index_mu][1]=0;
+        dlm1=0.; /*l=2*/
+        d33[index_mu][2]=0;
+        dl=sqrt(7./2.)*(1+mu[index_mu])*(1+mu[index_mu])*(1+mu[index_mu])/8.; /*l=3*/
+        d33[index_mu][3] = dl * sqrt(2./7.);
+        for(l=3;l<lmax;l++){
+            ll=(double) l;
+            /* sqrt((2l+1)/2)*d22 recurrence, supposed to be more stable */
+            dlp1 = fac1[l]*(mu[index_mu]-fac2[l])*dl - fac3[l]*dlm1;
+            d33[index_mu][l+1] = dlp1 * fac4[l];
+            dlm1 = dl;
+            dl = dlp1;
+        }
     }
-  }
-  free(fac1); free(fac2); free(fac3); free(fac4);
-  return _SUCCESS_;
+    free(fac1); free(fac2); free(fac3); free(fac4);
+    return _SUCCESS_;
 }
 /*---------------------------------------*/
 /*---------------------------------------*/
@@ -8507,3 +8220,859 @@ int lensing_d4m4(
 }
 
 
+/*-----------------DLM-------------------*/
+/*---------------------------------------*/
+/**
+ * This routine calculates the idealised TT noise ,
+ * and stores the tabulated values.
+ * The sampling of the l's given by the external command is preserved.
+ */
+int idealized_temperature_noise_spectrum_init( struct lensing * ple, struct harmonic * phr){ /* DLM */
+    
+    int n_data_length;
+    int index_l;
+    
+    double fac3;
+    double fac4 = 1./(8.*log(2.));
+    
+    double facd = ple->delta_noise*ple->delta_noise;
+    double facs = ple->sigma_beam*ple->sigma_beam;
+    
+    n_data_length = ple->l_unlensed_max+1;
+    
+    class_realloc(ple->l_tn,
+                  ple->l_tn,
+                  n_data_length*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->pk_tn,
+                  ple->pk_tn,
+                  n_data_length*sizeof(double),
+                  ple->error_message);
+    
+    
+    if(ple->noise_type == unitless)
+    {
+        for (index_l=2; index_l<=ple->l_unlensed_max; index_l++) {
+            
+            double ll = (double)index_l;
+            
+            fac3 = ll*(ll+1.)*fac4;
+            
+            ple->l_tn[index_l] = ll;
+            
+            ple->pk_tn[index_l] = facd*exp(fac3*facs);
+        }
+    }
+    else
+    {
+        for (index_l=2; index_l<=ple->l_unlensed_max; index_l++) {
+            
+            double ll = (double)index_l;
+            
+            fac3 = ll*(ll+1.)*fac4;
+            
+            ple->l_tn[index_l] = ll;
+            
+            ple->pk_tn[index_l] = facd*exp(fac3*facs)/pow(phr->T_cmb*1.e6,2);
+            
+        }
+    }
+    return _SUCCESS_;
+}
+
+/**
+ * This routine calculates the idealised polarization noise,
+ * and stores the tabulated values.
+ * The sampling of the l's given by the external command is preserved.
+ */
+int idealized_polarization_noise_spectrum_init( struct lensing * ple, struct harmonic * phr){ /* DLM */
+    
+    int n_data_length;
+    int index_l;
+    
+    double fac3;
+    double fac4 = 1./(8.*log(2.));
+    
+    double facd = ple->delta_noise*ple->delta_noise;
+    double facs = ple->sigma_beam*ple->sigma_beam;
+    
+    n_data_length = ple->l_unlensed_max+1;
+    
+    class_realloc(ple->l_pn,
+                  ple->l_pn,
+                  n_data_length*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->pk_pn,
+                  ple->pk_pn,
+                  n_data_length*sizeof(double),
+                  ple->error_message);
+    
+    if(ple->noise_type == unitless)
+    {
+        for (index_l=2; index_l<=ple->l_unlensed_max; index_l++) {
+            
+            double ll = (double)index_l;
+            
+            fac3 = ll*(ll+1.)*fac4;
+            
+            ple->l_pn[index_l] = ll;
+            
+            ple->pk_pn[index_l] = 2.*facd*exp(fac3*facs);
+        }
+    }
+    else
+    {
+        for (index_l=2; index_l<=ple->l_unlensed_max; index_l++) {
+            
+            double ll = (double)index_l;
+            
+            fac3 = ll*(ll+1.)*fac4;
+            
+            ple->l_pn[index_l] = ll;
+            
+            ple->pk_pn[index_l] = 2.*facd*exp(fac3*facs)/pow(phr->T_cmb*1.e6,2);
+            
+        }
+    }
+    return _SUCCESS_;
+}
+
+/**
+ * This routine reads the lensing reconstruction
+ * noise spectrum from an external command,
+ * and stores the tabulated values.
+ * The sampling of the l's given by the external command is preserved.
+ */
+int external_lens_recon_noise_spectrum_init( struct lensing * ple){ /* DLM */
+    
+    char arguments[_ARGUMENT_LENGTH_MAX_];
+    char line[_LINE_LENGTH_MAX_];
+    char command_with_arguments[2*_ARGUMENT_LENGTH_MAX_];
+    FILE *process;
+    int n_data_guess, n_data = 0;
+    double *l = NULL;
+    double this_l, this_plrn, ll;
+    double *plrn = NULL, *tmp = NULL;
+    int status;
+    int index_l;
+    
+    /** - Initialization */
+    /* Prepare the data (with some initial size) */
+    
+    n_data_guess = 1000;
+    l   = (double *)malloc(n_data_guess*sizeof(double));
+    plrn   = (double *)malloc(n_data_guess*sizeof(double));
+    
+    /* Prepare the command */
+    /* If the command is just a "cat", no arguments need to be passed */
+    if(strncmp("cat ", ple->command_for_lens_recon_noise_spec, 4) == 0) {
+        sprintf(arguments, " ");
+    }
+    
+    /* write the actual command in a string */
+    sprintf(command_with_arguments, "%s %s", ple->command_for_lens_recon_noise_spec, arguments);
+    printf(" -> running: %s\n",command_with_arguments);
+    
+    /** - Launch the command and retrieve the output */
+    /* Launch the process */
+    process = popen(command_with_arguments, "r");
+    class_test(process == NULL,
+               ple->error_message,
+               "The program failed to set the environment for the external command. Maybe you ran out of memory.");
+    
+    /* Read output and store it */
+    while (fgets(line, sizeof(line)-1, process) != NULL) {
+        
+        sscanf(line, "%lf %lf ", &this_l, &this_plrn);
+        /* Standard technique in C: if too many data, double the size of the vectors */
+        /* (it is faster and safer that reallocating every new line) */
+        if((n_data+1) > n_data_guess) {
+            
+            n_data_guess *= 2;
+            
+            tmp = (double *)realloc(l,   n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            l = tmp;
+            
+            tmp = (double *)realloc(plrn, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            plrn = tmp;
+            
+        };
+        /* Store */
+        l[n_data]   = this_l;
+        plrn[n_data]   = this_plrn;
+        n_data++;
+        /* Check ascending order of the l's */
+        if(n_data>1) {
+            class_test(l[n_data-1] <= l[n_data-2],
+                       ple->error_message,
+                       "The l's are not strictly sorted in ascending order, "
+                       "as it is required for the calculation of the splines.\n");
+        }
+    }
+    /* Close the process */
+    status = pclose(process);
+    class_test(status != 0.,
+               ple->error_message,
+               "The attempt to launch the external command was unsuccessful. "
+               "Try doing it by hand to check for errors.");
+    
+    /** - Store the read results into CLASS structures */
+    ple->l_rcn_size = n_data;
+    /** - Make room */
+    class_realloc(ple->l_rcn_ext,
+                  ple->l_rcn_ext,
+                  ple->l_rcn_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->pk_rcn_ext,
+                  ple->pk_rcn_ext,
+                  ple->l_rcn_size*sizeof(double),
+                  ple->error_message);
+    
+    /** - Store values */
+    for (index_l=0; index_l<ple->l_rcn_size; index_l++) {
+        
+        ll = (double)index_l;
+        
+        ple->l_rcn_ext[index_l]  = l[index_l];
+        ple->pk_rcn_ext[index_l] = plrn[index_l]/ll/(1.+ll);
+        
+    };
+    /** - Set the flag related to having calculated the noise. */
+    ple->has_lens_noise_rcn = _TRUE_;
+    
+    /** - Release the memory used locally */
+    free(l);
+    free(plrn);
+    
+    return _SUCCESS_;
+}
+
+/*-----------------DLM-------------------*/
+/*---------------------------------------*/
+/**
+ * This routine reads the cmb temperature
+ * noise spectrum from an external command,
+ * and stores the tabulated values.
+ * The sampling of the l's given by the external command is preserved.
+ */
+int external_temperature_noise_spectrum_init(struct lensing * ple, struct harmonic * phr){
+    
+    char arguments[_ARGUMENT_LENGTH_MAX_];
+    char line[_LINE_LENGTH_MAX_];
+    char command_with_arguments[2*_ARGUMENT_LENGTH_MAX_];
+    FILE *process;
+    int n_data_guess, n_data = 0;
+    double *l = NULL;
+    double this_l, this_pltn;
+    double *pltn = NULL, *tmp = NULL;
+    int status;
+    int index_l;
+    
+    /** - Initialization */
+    /* Prepare the data (with some initial size) */
+    
+    n_data_guess = 1000;
+    l   = (double *)malloc(n_data_guess*sizeof(double));
+    pltn   = (double *)malloc(n_data_guess*sizeof(double));
+    
+    /* Prepare the command */
+    /* If the command is just a "cat", no arguments need to be passed */
+    if(strncmp("cat ", ple->command_for_temp_noise_spec, 4) == 0) {
+        sprintf(arguments, " ");
+    }
+    
+    /* write the actual command in a string */
+    sprintf(command_with_arguments, "%s %s", ple->command_for_temp_noise_spec, arguments);
+    printf(" -> running: %s\n",command_with_arguments);
+    
+    /** - Launch the command and retrieve the output */
+    /* Launch the process */
+    process = popen(command_with_arguments, "r");
+    class_test(process == NULL,
+               ple->error_message,
+               "The program failed to set the environment for the external command. Maybe you ran out of memory.");
+    
+    /* Read output and store it */
+    while (fgets(line, sizeof(line)-1, process) != NULL) {
+        //        printf("%f %f ", &this_l, &this_pltn); // selim DEBUG DLM
+        sscanf(line, "%lf %lf ", &this_l, &this_pltn);
+        
+        /* Standard technique in C: if too many data, double the size of the vectors */
+        /* (it is faster and safer that reallocating every new line) */
+        if((n_data+1) > n_data_guess) {
+            n_data_guess *= 2;
+            tmp = (double *)realloc(l,   n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            l = tmp;
+            
+            tmp = (double *)realloc(pltn, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            pltn = tmp;
+        };
+        /* Store */
+        l[n_data]   = this_l;
+        pltn[n_data]   = this_pltn;
+        // printf("%f %f ", this_l, this_pltn); // selim DEBUG DLM
+        n_data++;
+        /* Check ascending order of the k's */
+        if(n_data>1) {
+            class_test(l[n_data-1] <= l[n_data-2],
+                       ple->error_message,
+                       "The l's are not strictly sorted in ascending order, "
+                       "as it is required for the calculation of the splines.\n");
+        }
+    }
+    /* Close the process */
+    status = pclose(process);
+    class_test(status != 0.,
+               ple->error_message,
+               "The attempt to launch the external command was unsuccessful. "
+               "Try doing it by hand to check for errors.");
+    
+    /** - Store the read results into CLASS structures */
+    ple->l_tn_size = n_data;
+    /** - Make room */
+    class_realloc(ple->l_tn,
+                  ple->l_tn,
+                  ple->l_tn_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->pk_tn,
+                  ple->pk_tn,
+                  ple->l_tn_size*sizeof(double),
+                  ple->error_message);
+    
+    /** - Store values */
+    if(ple->noise_type == unitless){
+        for (index_l=0; index_l<ple->l_tn_size; index_l++) {
+            ple->l_tn[index_l]  = l[index_l];
+            ple->pk_tn[index_l] = pltn[index_l];
+        }
+    }
+    else{
+        for (index_l=0; index_l<ple->l_tn_size; index_l++) {
+            ple->l_tn[index_l]  = l[index_l];
+            ple->pk_tn[index_l] = pltn[index_l]/pow(phr->T_cmb*1.e6,2);
+        }
+    }
+    /** - Release the memory used locally */
+    free(l);
+    free(pltn);
+    
+    return _SUCCESS_;
+}
+
+/*-----------------DLM-------------------*/
+/*---------------------------------------*/
+/**
+ * This routine reads the lensing reconstruction
+ * noise spectrum from an external command,
+ * and stores the tabulated values.
+ * The sampling of the l's given by the external command is preserved.
+ */
+int external_polarization_noise_spectrum_init( struct lensing * ple, struct harmonic * phr){
+    
+    char arguments[_ARGUMENT_LENGTH_MAX_];
+    char line[_LINE_LENGTH_MAX_];
+    char command_with_arguments[2*_ARGUMENT_LENGTH_MAX_];
+    FILE *process;
+    int n_data_guess, n_data = 0;
+    double * l;
+    double this_l, this_plpn;
+    double *plpn = NULL, *tmp = NULL;
+    int status;
+    int index_l;
+    
+    /** - Initialization */
+    /* Prepare the data (with some initial size) */
+    
+    n_data_guess = 1000;
+    l   = (double *)malloc(n_data_guess*sizeof(double));
+    plpn   = (double *)malloc(n_data_guess*sizeof(double));
+    
+    /* Prepare the command */
+    /* If the command is just a "cat", no arguments need to be passed */
+    if(strncmp("cat ", ple->command_for_polarization_noise_spec, 4) == 0) {
+        sprintf(arguments, " ");
+    }
+    
+    /* write the actual command in a string */
+    sprintf(command_with_arguments, "%s %s", ple->command_for_polarization_noise_spec, arguments);
+    printf(" -> running: %s\n",command_with_arguments);
+    
+    /** - Launch the command and retrieve the output */
+    /* Launch the process */
+    process = popen(command_with_arguments, "r");
+    class_test(process == NULL,
+               ple->error_message,
+               "The program failed to set the environment for the external command. Maybe you ran out of memory.");
+    
+    /* Read output and store it */
+    while (fgets(line, sizeof(line)-1, process) != NULL) {
+        
+        sscanf(line, "%lf %lf ", &this_l, &this_plpn);
+        
+        /* Standard technique in C: if too many data, double the size of the vectors */
+        /* (it is faster and safer that reallocating every new line) */
+        if((n_data+1) > n_data_guess) {
+            n_data_guess *= 2;
+            tmp = (double *)realloc(l,   n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            l = tmp;
+            tmp = (double *)realloc(plpn, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            plpn = tmp;
+        };
+        /* Store */
+        l[n_data]   = this_l;
+        plpn[n_data]   = this_plpn;
+        
+        n_data++;
+        /* Check ascending order of the k's */
+        if(n_data>1) {
+            class_test(l[n_data-1] <= l[n_data-2],
+                       ple->error_message,
+                       "The l's are not strictly sorted in ascending order, "
+                       "as it is required for the calculation of the splines.\n");
+        }
+    }
+    /* Close the process */
+    status = pclose(process);
+    class_test(status != 0.,
+               ple->error_message,
+               "The attempt to launch the external command was unsuccessful. "
+               "Try doing it by hand to check for errors.");
+    
+    /** - Store the read results into CLASS structures */
+    ple->l_pn_size = n_data;
+    /** - Make room */
+    class_realloc(ple->l_pn,
+                  ple->l_pn,
+                  ple->l_pn_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->pk_pn,
+                  ple->pk_pn,
+                  ple->l_pn_size*sizeof(double),
+                  ple->error_message);
+    
+    /** - Store values */
+    
+    if(ple->noise_type == unitless){
+        for (index_l=0; index_l<ple->l_pn_size; index_l++) {
+            ple->l_pn[index_l]  = l[index_l];
+            ple->pk_pn[index_l] = plpn[index_l];
+        }
+    }
+    else{
+        for (index_l=0; index_l<ple->l_tn_size; index_l++) {
+            ple->l_pn[index_l]  = l[index_l];
+            ple->pk_pn[index_l] = plpn[index_l]/pow(phr->T_cmb*1.e6,2);
+        }
+    }
+    
+    /** - Release the memory used locally */
+    free(l);
+    free(plpn);
+    
+    return _SUCCESS_;
+}
+/*---------------------------------------*/
+
+
+
+/*-----------------DLM-------------------*/
+/*---------------------------------------*/
+/**
+ * This routine reads the cmb spectra from an external command,
+ * and stores the tabulated values.
+ * The sampling of the l's given by the external command is preserved.
+ */
+int external_cmb_spectra_init(struct lensing * ple, struct harmonic * phr){
+    
+    char arguments[_ARGUMENT_LENGTH_MAX_];
+    char line[_LINE_LENGTH_MAX_];
+    char command_with_arguments[2*_ARGUMENT_LENGTH_MAX_];
+    FILE *process;
+    int n_data_guess, n_data = 0;
+    double *l = NULL;
+    double this_l, this_cltt, this_clte, this_clee, this_clbb, this_clpp;
+    double *tmp = NULL;
+    double *cltt = NULL;
+    double *clte = NULL;
+    double *clee = NULL;
+    double *clbb = NULL;
+    double *clpp = NULL;
+    int status;
+    int index_l;
+    
+    /** - Initialization */
+    /* Prepare the data (with some initial size) */
+    
+    n_data_guess = 1000;
+    l   = (double *)malloc(n_data_guess*sizeof(double));
+    cltt   = (double *)malloc(n_data_guess*sizeof(double));
+    clte   = (double *)malloc(n_data_guess*sizeof(double));
+    clee   = (double *)malloc(n_data_guess*sizeof(double));
+    clbb   = (double *)malloc(n_data_guess*sizeof(double));
+    clpp   = (double *)malloc(n_data_guess*sizeof(double));
+    
+    /* Prepare the command */
+    /* If the command is just a "cat", no arguments need to be passed */
+    if(strncmp("cat ", ple->command_for_external_cmb_spectra, 4) == 0) {
+        sprintf(arguments, " ");
+    }
+    
+    /* write the actual command in a string */
+    sprintf(command_with_arguments, "%s %s", ple->command_for_external_cmb_spectra, arguments);
+    printf(" -> running: %s\n",command_with_arguments);
+    
+    /** - Launch the command and retrieve the output */
+    /* Launch the process */
+    process = popen(command_with_arguments, "r");
+    class_test(process == NULL,
+               ple->error_message,
+               "The program failed to set the environment for the external command. Maybe you ran out of memory.");
+    
+    /* Read output and store it */
+    while (fgets(line, sizeof(line)-1, process) != NULL) {
+        
+        sscanf(line, "%lf %lf %lf %lf %lf %lf ", &this_l, &this_cltt, &this_clte, &this_clee, &this_clbb, &this_clpp);
+        
+        /* Standard technique in C: if too many data, double the size of the vectors */
+        /* (it is faster and safer that reallocating every new line) */
+        if((n_data+1) > n_data_guess) {
+            n_data_guess *= 2;
+            tmp = (double *)realloc(l,   n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            l = tmp;
+            
+            tmp = (double *)realloc(cltt, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            cltt = tmp;
+            
+            tmp = (double *)realloc(clte, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clte = tmp;
+            
+            tmp = (double *)realloc(clee, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clee = tmp;
+            
+            tmp = (double *)realloc(clbb, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clbb = tmp;
+            
+            tmp = (double *)realloc(clpp, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clpp = tmp;
+        };
+        /* Store */
+        l[n_data]   = this_l;
+        cltt[n_data]   = this_cltt;
+        clte[n_data]   = this_clte;
+        clee[n_data]   = this_clee;
+        clbb[n_data]   = this_clbb;
+        clpp[n_data]   = this_clpp;
+        // printf("%f %f %f %f \n", this_l, this_cltt, this_clte, this_clee); // selim DEBUG DLM
+        n_data++;
+        /* Check ascending order of the k's */
+        if(n_data>1) {
+            class_test(l[n_data-1] <= l[n_data-2],
+                       ple->error_message,
+                       "The l's are not strictly sorted in ascending order, "
+                       "as it is required for the calculation of the splines.\n");
+        }
+    }
+    /* Close the process */
+    status = pclose(process);
+    class_test(status != 0.,
+               ple->error_message,
+               "The attempt to launch the external command was unsuccessful. "
+               "Try doing it by hand to check for errors.");
+    
+    /** - Store the read results into CLASS structures */
+    ple->l_cl_size = n_data;
+    /** - Make room */
+    class_realloc(ple->l_cl,
+                  ple->l_cl,
+                  ple->l_cl_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_tt_ext,
+                  ple->cl_tt_ext,
+                  ple->l_cl_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_pp_ext,
+                  ple->cl_pp_ext,
+                  ple->l_cl_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_te_ext,
+                  ple->cl_te_ext,
+                  ple->l_cl_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_ee_ext,
+                  ple->cl_ee_ext,
+                  ple->l_cl_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_bb_ext,
+                  ple->cl_bb_ext,
+                  ple->l_cl_size*sizeof(double),
+                  ple->error_message);
+    
+    /** - Store values */
+    if(ple->noise_type == unitless){
+        for (index_l=0; index_l<ple->l_cl_size; index_l++) {
+            ple->l_cl[index_l]  = l[index_l];
+            ple->cl_tt_ext[index_l] = cltt[index_l];
+            ple->cl_te_ext[index_l] = clte[index_l];
+            ple->cl_ee_ext[index_l] = clee[index_l];
+            ple->cl_bb_ext[index_l] = clbb[index_l];
+            ple->cl_pp_ext[index_l] = clpp[index_l];
+        }
+    }
+    else{
+        for (index_l=0; index_l<ple->l_cl_size; index_l++) {
+            ple->l_cl[index_l]  = l[index_l];
+            ple->cl_tt_ext[index_l] = cltt[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_te_ext[index_l] = clte[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_ee_ext[index_l] = clee[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_bb_ext[index_l] = clbb[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_pp_ext[index_l] = clpp[index_l];
+            /* ple->cl_pp_ext[index_l] = clpp[index_l]/pow(phr->T_cmb*1.e6,2);   */
+            
+        }
+    }
+    
+    /** - Release the memory used locally */
+    free(l);
+    free(cltt);    free(clte);    free(clee);    free(clbb);    free(clpp);
+    
+    return _SUCCESS_;
+}
+
+/*-----------------DLM-------------------*/
+/*---------------------------------------*/
+/**
+ * This routine reads the lensed cmb spectra from an external command,
+ * and stores the tabulated values.
+ * The sampling of the l's given by the external command is preserved.
+ */
+int external_lensed_cmb_spectra_init(struct lensing * ple, struct harmonic * phr){
+    
+    char arguments[_ARGUMENT_LENGTH_MAX_];
+    char line[_LINE_LENGTH_MAX_];
+    char command_with_arguments[2*_ARGUMENT_LENGTH_MAX_];
+    FILE *process;
+    int n_data_guess, n_data = 0;
+    double *l = NULL;
+    double this_l, this_cltt, this_clte, this_clee, this_clbb, this_clpp;
+    double *cltt = NULL, *tmp = NULL;
+    double *clte = NULL;
+    double *clee = NULL;
+    double *clbb = NULL;
+    double *clpp = NULL;
+    int status;
+    int index_l;
+    
+    /** - Initialization */
+    /* Prepare the data (with some initial size) */
+    
+    n_data_guess = 1000;
+    l   = (double *)malloc(n_data_guess*sizeof(double));
+    cltt   = (double *)malloc(n_data_guess*sizeof(double));
+    clte   = (double *)malloc(n_data_guess*sizeof(double));
+    clee   = (double *)malloc(n_data_guess*sizeof(double));
+    clbb   = (double *)malloc(n_data_guess*sizeof(double));
+    clpp   = (double *)malloc(n_data_guess*sizeof(double));
+    
+    /* Prepare the command */
+    /* If the command is just a "cat", no arguments need to be passed */
+    if(strncmp("cat ", ple->command_for_external_lensed_cmb_spectra, 4) == 0) {
+        sprintf(arguments, " ");
+    }
+    
+    /* write the actual command in a string */
+    sprintf(command_with_arguments, "%s %s", ple->command_for_external_lensed_cmb_spectra, arguments);
+    printf(" -> running: %s\n",command_with_arguments);
+    
+    /** - Launch the command and retrieve the output */
+    /* Launch the process */
+    process = popen(command_with_arguments, "r");
+    class_test(process == NULL,
+               ple->error_message,
+               "The program failed to set the environment for the external command. Maybe you ran out of memory.");
+    
+    /* Standard technique in C: if too many data, double the size of the vectors */
+    /* (it is faster and safer that reallocating every new line) */
+    /* Read output and store it */
+    while (fgets(line, sizeof(line)-1, process) != NULL) {
+        
+        sscanf(line, "%lf %lf %lf %lf %lf %lf ", &this_l, &this_cltt, &this_clte, &this_clee, &this_clbb, &this_clpp);
+        
+        /* Standard technique in C: if too many data, double the size of the vectors */
+        /* (it is faster and safer that reallocating every new line) */
+        if((n_data+1) > n_data_guess) {
+            n_data_guess *= 2;
+            tmp = (double *)realloc(l,   n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            l = tmp;
+            
+            tmp = (double *)realloc(cltt, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            cltt = tmp;
+            
+            tmp = (double *)realloc(clte, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clte = tmp;
+            
+            tmp = (double *)realloc(clee, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clee = tmp;
+            
+            tmp = (double *)realloc(clbb, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clbb = tmp;
+            
+            tmp = (double *)realloc(clpp, n_data_guess*sizeof(double));
+            class_test(tmp == NULL,
+                       ple->error_message,
+                       "Error allocating memory to read the external spectrum.\n");
+            clpp = tmp;
+        };
+        
+        /* Store */
+        l[n_data]   = this_l;
+        cltt[n_data]   = this_cltt;
+        clte[n_data]   = this_clte;
+        clee[n_data]   = this_clee;
+        clbb[n_data]   = this_clbb;
+        clpp[n_data]   = this_clpp;
+        
+        n_data++;
+        /* Check ascending order of the k's */
+        if(n_data>1) {
+            class_test(l[n_data-1] <= l[n_data-2],
+                       ple->error_message,
+                       "The l's are not strictly sorted in ascending order, "
+                       "as it is required for the calculation of the splines.\n");
+        }
+    }
+    /* Close the process */
+    status = pclose(process);
+    class_test(status != 0.,
+               ple->error_message,
+               "The attempt to launch the external command was unsuccessful. "
+               "Try doing it by hand to check for errors.");
+    
+    /** - Store the read results into CLASS structures */
+    ple->l_cl_lensed_size = n_data;
+    /** - Make room */
+    class_realloc(ple->l_cl_lensed,
+                  ple->l_cl_lensed,
+                  ple->l_cl_lensed_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_lensed_tt_ext,
+                  ple->cl_lensed_tt_ext,
+                  ple->l_cl_lensed_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_lensed_pp_ext,
+                  ple->cl_lensed_pp_ext,
+                  ple->l_cl_lensed_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_lensed_te_ext,
+                  ple->cl_lensed_te_ext,
+                  ple->l_cl_lensed_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_lensed_ee_ext,
+                  ple->cl_lensed_ee_ext,
+                  ple->l_cl_lensed_size*sizeof(double),
+                  ple->error_message);
+    class_realloc(ple->cl_lensed_bb_ext,
+                  ple->cl_lensed_bb_ext,
+                  ple->l_cl_lensed_size*sizeof(double),
+                  ple->error_message);
+    
+    /** - Store values */
+    if(ple->noise_type == unitless){
+        for (index_l=0; index_l<ple->l_cl_lensed_size; index_l++) {
+            ple->l_cl_lensed[index_l]  = l[index_l];
+            ple->cl_lensed_tt_ext[index_l] = cltt[index_l];
+            ple->cl_lensed_te_ext[index_l] = clte[index_l];
+            ple->cl_lensed_ee_ext[index_l] = clee[index_l];
+            ple->cl_lensed_bb_ext[index_l] = clbb[index_l];
+            ple->cl_lensed_pp_ext[index_l] = clpp[index_l];
+            
+            /*
+             // Load external lensed spectra into lensing structure
+             if(index_l<ple->l_size){
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_tt] = cltt[index_l];
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_te] = clte[index_l];
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_ee] = clee[index_l];
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_bb] = clbb[index_l];
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_pp] = clpp[index_l];
+             }
+             */
+        }
+    }
+    else{
+        for (index_l=0; index_l<ple->l_cl_lensed_size; index_l++) {
+            ple->l_cl_lensed[index_l]  = l[index_l];
+            ple->cl_lensed_tt_ext[index_l] = cltt[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_lensed_te_ext[index_l] = clte[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_lensed_ee_ext[index_l] = clee[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_lensed_bb_ext[index_l] = clbb[index_l]/pow(phr->T_cmb*1.e6,2);
+            ple->cl_lensed_pp_ext[index_l] = clpp[index_l];
+            /* ple->cl_lensed_pp_ext[index_l] = clpp[index_l]/pow(phr->T_cmb*1.e6,2);    */
+            
+            /*
+             // Load external lensed spectra into lensing structure
+             if(index_l<ple->l_size){
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_tt] = cltt[index_l]/pow(phr->T_cmb*1.e6,2);
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_te] = clte[index_l]/pow(phr->T_cmb*1.e6,2);
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_ee] = clee[index_l]/pow(phr->T_cmb*1.e6,2);
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_bb] = clbb[index_l]/pow(phr->T_cmb*1.e6,2);
+             ple->cl_lens[index_l*ple->lt_size+ple->index_lt_pp] = clpp[index_l];
+             }
+             */
+        }
+    }
+    /** - Release the memory used locally */
+    free(l);
+    free(cltt);    free(clte);    free(clee);    free(clbb);    free(clpp);
+    
+    return _SUCCESS_;
+}
