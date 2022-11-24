@@ -203,9 +203,10 @@
  * For shooting method: definition of the possible targets
  */
 
-enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr, Omega_scf, Omega_ini_dcdm, omega_ini_dcdm, sigma8};
+/* EDE-edit: add fEDE and z_c (the order is important for speed) */
+enum target_names {tn_fEDE,tn_z_c,theta_s, Omega_dcdmdr, omega_dcdmdr, Omega_scf, Omega_ini_dcdm, omega_ini_dcdm, sigma8};
 /* Important: Keep this number equal to the number of target_names (except sigma8), and keep sigma8 at the very end */
-#define _NUM_TARGETS_ 6
+#define _NUM_TARGETS_ 8
 /* Important: add one for each new target_names */
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations, cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};
 
@@ -405,6 +406,7 @@ extern "C" {
   int input_read_parameters_primordial(struct file_content * pfc,
                                        struct perturbations * ppt,
                                        struct primordial * ppm,
+                                       struct background *pba,
                                        ErrorMsg errmsg);
 
   int input_read_parameters_spectra(struct file_content * pfc,

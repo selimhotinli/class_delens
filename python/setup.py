@@ -43,6 +43,7 @@ classy_ext = Extension("classy", [os.path.join(classy_folder, "classy.pyx")],
                            library_dirs=[root_folder, GCCPATH],
                            extra_link_args=['-lgomp']
                        )
+
 import sys
 classy_ext.cython_directives = {'language_level': "3" if sys.version_info.major>=3 else "2"}
 

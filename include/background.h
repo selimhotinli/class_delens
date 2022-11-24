@@ -61,6 +61,10 @@ struct background
 
   double H0; /**< \f$ H_0 \f$: Hubble parameter (in fact, [\f$H_0/c\f$]) in \f$ Mpc^{-1} \f$ */
   double h;  /**< reduced Hubble parameter */
+    
+    /* EDE-edit: */
+  double n_s_ICs;
+  double A_s_ICs;
 
   double Omega0_g; /**< \f$ \Omega_{0 \gamma} \f$: photons */
   double T_cmb;    /**< \f$ T_{cmb} \f$: current CMB temperature in Kelvins */
@@ -101,6 +105,18 @@ struct background
                                              default value */
   int * ncdm_input_q_size; /**< Vector of numbers of q bins */
   double * ncdm_qmax;      /**< Vector of maximum value of q */
+    
+    /* EDE-edit, making Cobaya happy */
+  double n_scf;
+  double f_scf;
+  double m_scf;
+  double CC_scf;
+  double thetai_scf;
+    
+    /* EDE-edit log params */
+  double log10m_scf;
+  double log10z_c;
+  double log10f_scf;
 
   double Omega0_k;         /**< \f$ \Omega_{0_k} \f$: curvature contribution */
 
@@ -150,6 +166,10 @@ struct background
   double z_eq;      /**< redshift at radiation/matter equality */
   double tau_eq;    /**< conformal time at radiation/matter equality [Mpc] */
 
+    /* EDE-edit: Adding in peak of fEDE and corresponding redshift */
+  double z_c;
+  double fEDE;
+    
   //@}
 
 
@@ -185,6 +205,9 @@ struct background
   int index_bg_rho_scf;       /**< scalar field energy density */
   int index_bg_p_scf;         /**< scalar field pressure */
   int index_bg_p_prime_scf;         /**< scalar field pressure */
+    
+    // EDE-edit: Include potential without CC
+  int index_bg_V_e_scf;         /**< scalar field potential V */
 
   int index_bg_rho_ncdm1;     /**< density of first ncdm species (others contiguous) */
   int index_bg_p_ncdm1;       /**< pressure of first ncdm species (others contiguous) */
@@ -510,6 +533,12 @@ extern "C" {
                                struct precision *ppr,
                                struct background *pba
                                );
+    
+  // EDE-edit: Added for finding f/zc
+  int background_find_f_and_zc(
+                               struct precision *ppr,
+                               struct background *pba
+                               );
 
 
   int background_output_titles(struct background * pba,
@@ -550,6 +579,11 @@ extern "C" {
                                );
 
   /** Scalar field potential and its derivatives **/
+    /* EDE-edit: added V_e */
+  double V_e_scf(
+                 struct background *pba,
+                 double phi
+                 );
   double V_scf(
                struct background *pba,
                double phi

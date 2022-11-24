@@ -5,6 +5,11 @@
  *
  */
 
+/** @file input.c Documented input module.
+ *
+ * EDE-Class v0.2 20.01.2020
+ */
+
 #include "input.h"
 
 /* The input module fills variables belonging to the structures of
@@ -520,33 +525,23 @@ int input_shooting(struct file_content * pfc,
   int needs_shooting;
   int shooting_failed=_FALSE_;
 
+    /* EDE-edit: include fEDE and zc (order is important here for speed of shooting) */
+    
   /* array of parameters passed by the user for which we need shooting (= target parameters) */
-  char * const target_namestrings[] = {"100*theta_s",
-                                       "Omega_dcdmdr",
-                                       "omega_dcdmdr",
-                                       "Omega_scf",
-                                       "Omega_ini_dcdm",
-                                       "omega_ini_dcdm"};
-
+  char * const target_namestrings[] = {"fEDE","log10z_c","100*theta_s","Omega_dcdmdr","omega_dcdmdr",
+                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","sigma8"};
   /* array of corresponding parameters that must be adjusted in order to meet the target (= unknown parameters) */
-  char * const unknown_namestrings[] = {"h",                        /* unknown param for target '100*theta_s' */
-                                        "Omega_ini_dcdm",           /* unknown param for target 'Omega_dcdmd' */
-                                        "Omega_ini_dcdm",           /* unknown param for target 'omega_dcdmdr' */
-                                        "scf_shooting_parameter",   /* unknown param for target 'Omega_scf' */
-                                        "Omega_dcdmdr",             /* unknown param for target 'Omega_ini_dcdm' */
-                                        "omega_dcdmdr"};             /* unknown param for target 'omega_ini_dcdm' */
-
+  char * const unknown_namestrings[] = {"log10f_scf","log10m_scf","h","Omega_ini_dcdm","Omega_ini_dcdm",
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","A_s"};
   /* for each target, module up to which we need to run CLASS in order
      to compute the targetted quantities (not running the whole code
      each time to saves a lot of time) */
-  enum computation_stage target_cs[] = {cs_thermodynamics, /* computation stage for target '100*theta_s' */
-                                        cs_background,     /* computation stage for target 'Omega_dcdmdr' */
-                                        cs_background,     /* computation stage for target 'omega_dcdmdr' */
-                                        cs_background,     /* computation stage for target 'Omega_scf' */
-                                        cs_background,     /* computation stage for target 'Omega_ini_dcdm' */
-                                        cs_background};     /* computation stage for target 'omega_ini_dcdm' */
-
-  struct fzerofun_workspace fzw;
+  enum computation_stage target_cs[] = {cs_background, cs_background, cs_thermodynamics, cs_background,
+                                        cs_background, cs_background, cs_background, cs_background, cs_nonlinear};
+    
+/* END EDE-edit */
+    
+    struct fzerofun_workspace fzw;
 
   *has_shooting=_FALSE_;
 
@@ -1157,6 +1152,11 @@ int input_get_guess(double *xguess,
   int i;
   double Omega_M, a_decay, gamma, Omega0_dcdmdr=1.0;
   int index_guess;
+    
+   /* EDE-edit: fcns of theta and other params appearing in A1, A2, A3, A4 */
+  double fcnA1, fcnA2, fcnA3, fcnA4; // fcns of theta for fEDE/z_c guess
+  double thetaitemp; // store thetai_scf for A1,A2,A3,A4. Define on the fly for future implementation as shooting parameter
+  double n_scftemp; // store n_scf for A1,A2,A3,A4. Define on the fly for future implementation as shooting parameter
 
   /* Cheat to read only known parameters: */
   pfzw->fc.size -= pfzw->target_size;
@@ -1253,6 +1253,42 @@ int input_get_guess(double *xguess,
       xguess[index_guess] = 2.43e-9/0.87659*pfzw->target_value[index_guess];
       dxdy[index_guess] = 2.43e-9/0.87659;
       break;
+            
+    /* EDE-edit: added fEDE and z_c. Below "guess" is log_fscf[fEDE] and log10m[z_c]. 
+	Guess functions based on Smith et al. 1908.06995, Appendix A. */
+    case tn_fEDE:
+      thetaitemp=ba.scf_parameters[ba.scf_parameters_size-2];
+      n_scftemp=ba.scf_parameters[0];
+      fcnA2=4*.2*thetaitemp*pow(1-cos(thetaitemp),-1.*n_scftemp)*(1/(3*n_scftemp))*(5*pow(1-cos(0.8*thetaitemp),n_scftemp)*tan(thetaitemp*.5) + 2*0.2*n_scftemp*thetaitemp*pow(1-cos(thetaitemp),n_scftemp));
+      fcnA4=3*.2*thetaitemp*pow(1-cos(thetaitemp),-1.*n_scftemp)*(1/(2*n_scftemp))*(3*pow(1-cos(0.8*thetaitemp),n_scftemp)*tan(thetaitemp*.5) + 0.2*n_scftemp*thetaitemp*pow(1-cos(thetaitemp),n_scftemp));
+            
+      if (pow(10.,pfzw->target_value[index_guess+1]) > 3500){
+            xguess[index_guess] = log10(2.435e27*pow(pfzw->target_value[index_guess],.5)*pow(fcnA2,-0.5));
+           dxdy[index_guess] = 0.217147*(1/pfzw->target_value[index_guess]);
+         
+          }
+          
+      if (pow(10.,pfzw->target_value[index_guess+1]) <= 3500){
+           xguess[index_guess] = log10(2.435e27*pow(fcnA4,-0.5)*pow(pfzw->target_value[index_guess],0.5));
+          dxdy[index_guess] = 0.217147*(1/pfzw->target_value[index_guess]);
+            }
+        
+      break;
+        
+    case tn_z_c:
+      thetaitemp=ba.scf_parameters[ba.scf_parameters_size-2];
+      n_scftemp=ba.scf_parameters[0];
+      fcnA1= 20.*.2*thetaitemp*(1.e-4)*pow(1-cos(thetaitemp),-1.*n_scftemp)*(1/n_scftemp)*tan(thetaitemp*.5);
+      fcnA3=27.*.2*thetaitemp*.27*pow(1-cos(thetaitemp),-1.*n_scftemp)*(1/(2*n_scftemp))*tan(thetaitemp*.5);
+      if (pow(10.,pfzw->target_value[index_guess]) > 3500){
+        xguess[index_guess] = log10(2.*pow(1/0.6,2.)*1.e-33*pow(fcnA1,0.5))+2.*pfzw->target_value[index_guess];
+        dxdy[index_guess] = 2.;
+      }
+      if (pow(10.,pfzw->target_value[index_guess]) < 3500){
+        xguess[index_guess] = log10(pow(1/0.6,1.5)*1.e-33*pow(fcnA3,0.5))+1.5*pfzw->target_value[index_guess];
+        dxdy[index_guess] = 1.5;
+            }
+      break;
     }
   }
 
@@ -1303,7 +1339,9 @@ int input_try_unknown_parameters(double * unknown_parameter,
   struct output op;           /* for output files */
 
   int i;
+  int jj; /* EDE-edit: added jj*/
   double rho_dcdm_today, rho_dr_today;
+  double z_c_target; /* EDE-edit: added z_c_target*/
   struct fzerofun_workspace * pfzw;
   int input_verbose;
   int flag;
@@ -1455,6 +1493,29 @@ int input_try_unknown_parameters(double * unknown_parameter,
       break;
     case sigma8:
       output[i] = fo.sigma8[fo.index_pk_m];
+      break;
+            
+        /*EDE-edit: added fEDE and z_c. Note: fEDE guess is based upon target value for z_c. This means fEDE can only be shot for in conjunction with z_c. */
+    case tn_fEDE:
+      output[i] = ba.fEDE-pfzw->target_value[i];
+      /*printf("ba.thetai_scf = %e\n",ba.scf_parameters[ba.scf_parameters_size-2]);
+      printf("ba.n_scf = %e\n",ba.scf_parameters[0]);
+      printf("ba.fEDE = %e\n",ba.fEDE);
+      printf("fEDE target_value = %e\n", pfzw->target_value[i]); */
+      break;
+    case tn_z_c:
+      /* EDE-edit: snap target value z_c to computed z-grid. Note: index=0 is initial time, index=bt_size-1 is today. */
+      jj=0;
+      z_c_target=ba.z_table[0];
+      while (ba.z_table[jj] > pow(10.,pfzw->target_value[i])){
+          z_c_target=ba.z_table[jj];
+          jj++;
+      }
+      //output[i] = ba.log10z_c-pfzw->target_value[i];
+      output[i] = ba.log10z_c-log10(z_c_target);
+      /*printf("ba.log10z_c = %e\n",ba.log10z_c);
+      printf("zc target value = %e\n", pfzw->target_value[i]);
+      printf("log10(z_c_target_grid) = %e\n",log10(z_c_target)); */
       break;
     }
   }
@@ -1646,7 +1707,7 @@ int input_read_parameters(struct file_content * pfc,
              errmsg);
 
   /** Read parameters for primordial quantities */
-  class_call(input_read_parameters_primordial(pfc,ppt,ppm,
+  class_call(input_read_parameters_primordial(pfc,ppt,ppm,pba,
                                               errmsg),
              errmsg,
              errmsg);
@@ -2305,8 +2366,14 @@ int input_read_parameters_species(struct file_content * pfc,
   /** Summary: */
 
   /** - Define local variables */
-  int flag1, flag2, flag3;
-  double param1, param2, param3;
+  //int flag1,flag2,flag3;
+  // double param1,param2,param3;
+ /* EDE-edit: */
+  int flag1,flag2,flag3,flag4,flag5,flag6;
+  double param1,param2,param3,param4,param5,param6;
+  int flag31,flag32,flag41,flag42; /* EDE-edit: for logf vs f and logm vs m*/
+  double param31,param32,param41,param42; /* EDE-edit: for logf vs f and logm vs m*/
+    //
   char string1[_ARGUMENT_LENGTH_MAX_];
   int fileentries;
   int N_ncdm=0, n, entries_read;
@@ -3275,6 +3342,17 @@ int input_read_parameters_species(struct file_content * pfc,
                                            &flag1,
                                            errmsg),
                errmsg,errmsg);
+      
+      // EDE-edit: making Cobaya happy. EM: change f,m --> logf, logm
+      
+    class_call(parser_read_double(pfc,"n_scf",&param2,&flag2,errmsg),errmsg,errmsg);
+    class_call(parser_read_double(pfc,"CC_scf",&param5,&flag5,errmsg),errmsg,errmsg);
+    class_call(parser_read_double(pfc,"thetai_scf",&param6,&flag6,errmsg),errmsg,errmsg);
+      
+      /* EDE-edit: params except f and m */
+    pba->scf_parameters[0] = param2;
+    pba->scf_parameters[3] = param5;
+    pba->scf_parameters[4] = param6;
 
     /** 8.b.2) SCF initial conditions from attractor solution */
     /* Read */
@@ -3296,8 +3374,11 @@ int input_read_parameters_species(struct file_content * pfc,
         class_test(pba->scf_parameters_size<2,
                    errmsg,
                    "Since you are not using attractor initial conditions, you must specify phi and its derivative phi' as the last two entries in scf_parameters. See explanatory.ini for more details.");
-        pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];
-        pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
+          /* pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2]; */
+          /* EDE-edit:
+           Define Theta_i=scf_parameters[pba->scf_parameters_size-2], and f=scf_parameters[pba->scf_parameters_size-5] , such that phi_i =Theta_i f . Note that this needs an additional numerical factor to change phi from eV of Mpl (reduced Planck mass).*/
+          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-5]*pba->scf_parameters[pba->scf_parameters_size-2]*1/(2.435*1e27);
+          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
       }
     }
 
@@ -3985,6 +4066,7 @@ int input_prepare_pk_eq(struct precision * ppr,
  * @param pfc     Input: pointer to local structure
  * @param ppt     Input: pointer to perturbations structure
  * @param ppm     Input: pointer to primordial structure
+ * @param pba     Input: pointer to background structure
  * @param errmsg  Input: Error message
  * @return the error status
  */
@@ -3992,6 +4074,7 @@ int input_prepare_pk_eq(struct precision * ppr,
 int input_read_parameters_primordial(struct file_content * pfc,
                                      struct perturbations * ppt,
                                      struct primordial * ppm,
+                                     struct background *pba,
                                      ErrorMsg errmsg){
 
   /** Summary: */
@@ -4078,15 +4161,21 @@ int input_read_parameters_primordial(struct file_content * pfc,
       /* Complete set of parameters */
       if (flag1 == _TRUE_){
         ppm->A_s = param1;
+          /* EDE-edit: add in A_s to pba for use in initial conditions: */
+        pba->A_s_ICs = param1;
       }
       else if (flag2 == _TRUE_){
         ppm->A_s = exp(param2)*1.e-10;
+          /* EDE-edit: */
+        pba->A_s_ICs = exp(param2)*1.e-10;
       }
 
       /** 1.b.1.1) Adiabatic perturbations */
       if (ppt->has_ad == _TRUE_) {
         /* Read */
         class_read_double("n_s",ppm->n_s);
+          /* EDE-edit: similarly for n_s */
+        class_read_double("n_s",pba->n_s_ICs);
         class_read_double("alpha_s",ppm->alpha_s);
       }
 
@@ -6184,6 +6273,19 @@ int input_default_params(struct background *pba,
   pba->attractor_ic_scf = _TRUE_;
   pba->phi_ini_scf = 1;                // MZ: initial conditions are as multiplicative
   pba->phi_prime_ini_scf = 1;          //     factors of the radiation attractor values
+    
+    // EDE-edit: Added scf parameters by hand to make Cobaya happy
+  pba->n_scf = 3;
+  pba->f_scf = 3.973e26;
+  pba->m_scf = 5.329e-27;
+  pba->CC_scf = 1;
+  pba->thetai_scf = 2.64;
+    /* EDE-edit: default values for fEDE, z_c */
+  
+  pba->fEDE= 0.1;
+  pba->z_c= 3600;
+  pba->log10z_c=3.5;
+    
   /** 9.b.3) Tuning parameter */
   pba->scf_tuning_index = 0;
   /** 9.b.4) Shooting parameter */
