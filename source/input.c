@@ -64,7 +64,7 @@ int input_init(int argc,
                struct distortions *psd,
                struct output *pop,
                ErrorMsg errmsg){
-
+  
   /** Summary: */
 
   /** Define local variables */

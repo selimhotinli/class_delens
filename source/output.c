@@ -414,7 +414,6 @@ int output_cl(
                    pop->error_message); /* DLM */
     }
     
-    
     if (ple->calculate_pderivaties == _TRUE_ && ple->output_derivatives == _TRUE_) { /* DLM */
         
         if (ple->derv_type == delensed) {strcpy(derv_type_string, "delensed");}

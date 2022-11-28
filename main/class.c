@@ -3,9 +3,10 @@
  */
 
 #include "class.h"
+#include<stdio.h>
 
 int main(int argc, char **argv) {
-
+    
   struct precision pr;        /* for precision parameters */
   struct background ba;       /* for cosmological background */
   struct thermodynamics th;           /* for thermodynamics */
@@ -18,7 +19,7 @@ int main(int argc, char **argv) {
   struct distortions sd;      /* for spectral distortions */
   struct output op;           /* for output files */
   ErrorMsg errmsg;            /* for error messages */
-
+    
   if (input_init(argc, argv,&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,errmsg) == _FAILURE_) {
     printf("\n\nError running input_init \n=>%s\n",errmsg);
     return _FAILURE_;

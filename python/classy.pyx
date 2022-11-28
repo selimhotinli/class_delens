@@ -1458,7 +1458,7 @@ cdef class Class:
 
     def thetai_scf(self):
         return self.ba.thetai_scf
-
+    
     def rs_drag(self):
         self.compute(["thermodynamics"])
         return self.th.rs_d
@@ -2268,7 +2268,7 @@ cdef class Class:
             elif name == 'conformal_age':
                 value = self.ba.conformal_age
                 
-# EDE-edit: adding Omega_nu
+            # EDE-edit: adding Omega_nu
             elif name == 'Omega_nu':
                 value = self.ba.Omega0_ncdm_tot
                 
