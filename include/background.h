@@ -105,18 +105,6 @@ struct background
                                              default value */
   int * ncdm_input_q_size; /**< Vector of numbers of q bins */
   double * ncdm_qmax;      /**< Vector of maximum value of q */
-    
-    /* EDE-edit, making Cobaya happy */
-  double n_scf;
-  double f_scf;
-  double m_scf;
-  double CC_scf;
-  double thetai_scf;
-    
-    /* EDE-edit log params */
-  double log10m_scf;
-  double log10z_c;
-  double log10f_scf;
 
   double Omega0_k;         /**< \f$ \Omega_{0_k} \f$: curvature contribution */
 
@@ -143,6 +131,18 @@ struct background
   enum varconst_dependence varconst_dep; /**< dependence of the varying fundamental constants as a function of time */
   double varconst_transition_redshift; /**< redshift of transition between varied fundamental constants and normal fundamental constants in the 'varconst_instant' case*/
 
+/* EDE-edit, making Cobaya happy */
+  double n_scf;
+  double f_scf;
+  double m_scf;
+  double CC_scf;
+  double thetai_scf;
+    
+/* EDE-edit log params */
+  double log10m_scf;
+  double log10z_c;
+  double log10f_scf;
+    
   //@}
 
 

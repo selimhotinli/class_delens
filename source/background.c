@@ -487,8 +487,8 @@ int background_functions(
     p_tot += pvecback[pba->index_bg_p_scf];
     dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
     //divide relativistic & nonrelativistic (not very meaningful for oscillatory models)
-    rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-    rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    //rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+    //rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
     // EDE-edit
     rho_r += 3.*((phi_prime*phi_prime/(2*a*a) - V_e_scf(pba,phi))/3.);
     rho_m += ((phi_prime*phi_prime/(2*a*a) + V_e_scf(pba,phi))/3.) - 3.*((phi_prime*phi_prime/(2*a*a) - V_e_scf(pba,phi))/3.);
@@ -832,38 +832,38 @@ int background_init(
     printf("Running CLASS version %s\n",_VERSION_);
     printf("Computing background\n");
   }
-
+  printf("Josh Note: (background.c): 1\n");
   /** - if shooting failed during input, catch the error here */
   class_test(pba->shooting_failed == _TRUE_,
              pba->error_message,
              "Shooting failed, try optimising input_get_guess(). Error message:\n\n%s",
              pba->shooting_error);
-
+  printf("Josh Note: (background.c): 2\n");
   /** - assign values to all indices in vectors of background quantities */
   class_call(background_indices(pba),
              pba->error_message,
              pba->error_message);
-
+  printf("Josh Note: (background.c): 3\n");
   /** - check that input parameters make sense and write additional information about them */
   class_call(background_checks(ppr,pba),
              pba->error_message,
              pba->error_message);
-
+  printf("Josh Note: (background.c): 4\n");
   /** - integrate the background over log(a), allocate and fill the background table */
   class_call(background_solve(ppr,pba),
              pba->error_message,
              pba->error_message);
-
+  printf("Josh Note: (background.c): 5\n");
   /** - this function finds and stores a few derived parameters at radiation-matter equality */
   class_call(background_find_equality(ppr,pba),
              pba->error_message,
              pba->error_message);
-
+  printf("Josh Note: (background.c): 6\n");
   /* - write a summary of the budget of the universe */
   class_call(background_output_budget(pba),
              pba->error_message,
              pba->error_message);
-
+  printf("Josh Note: (background.c): 7\n");
     /** - EDE-edit: this function finds and stores a few derived parameters of EDE */
   if (pba->has_scf == _TRUE_) {
     class_call(background_find_f_and_zc(ppr,pba),
@@ -1933,19 +1933,19 @@ int background_solve(
   bpaw.pba = pba;
   class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
   bpaw.pvecback = pvecback;
-
+  printf("Josh Note (background.c): About to allocate\n");
   /** - allocate vector of quantities to be integrated */
   class_alloc(pvecback_integration,pba->bi_size*sizeof(double),pba->error_message);
-
+  printf("Josh Note (background.c): background_initial_conditions\n");
   /** - impose initial conditions with background_initial_conditions() */
   class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&(loga_ini)),
              pba->error_message,
              pba->error_message);
-
+  printf("Josh Note (background.c): output vector\n");
   /** - Determine output vector */
   loga_final = 0.; // with our conventions, loga is in fact log(a/a_0); we integrate until today, when log(a/a_0) = 0
   pba->bt_size = ppr->background_Nloga;
-
+  printf("Josh Note (background.c): background tables\n");
   /** - allocate background tables */
   class_alloc(pba->tau_table,pba->bt_size * sizeof(double),pba->error_message);
   class_alloc(pba->z_table,pba->bt_size * sizeof(double),pba->error_message);
@@ -1964,11 +1964,12 @@ int background_solve(
     pba->loga_table[index_loga] = loga_ini + index_loga*(loga_final-loga_ini)/(pba->bt_size-1);
     used_in_output[index_loga] = 1;
   }
-
+  printf("Josh Note (background.c): About to choose evolver\n");
   /** - choose the right evolver */
   switch (ppr->background_evolver) {
 
   case rk:
+    printf("Josh Note (background.c): evolver_rk\n");
     generic_evolver = evolver_rk;
     if (pba->background_verbose > 1) {
       printf("%s\n", "Chose rk as generic_evolver");
@@ -1976,13 +1977,15 @@ int background_solve(
     break;
 
   case ndf15:
+    printf("Josh Note (background.c): evolver_ndf15\n");
     generic_evolver = evolver_ndf15;
     if (pba->background_verbose > 1) {
       printf("%s\n", "Chose ndf15 as generic_evolver");
     }
     break;
   }
-
+  printf("Josh Note (background.c): About to perform integration\n");
+  printf("Josh Note (background.c): initial: %f, final: %f\n", loga_ini, loga_final);
   /** - perform the integration */
   class_call(generic_evolver(background_derivs,
                              loga_ini,
@@ -2002,7 +2005,7 @@ int background_solve(
                              pba->error_message),
              pba->error_message,
              pba->error_message);
-
+  printf("Josh Note (background.c): About to recover quantities today\n");
   /** - recover some quantities today */
   /* -> age in Gyears */
   pba->age = pvecback_integration[pba->index_bi_time]/_Gyr_over_Mpc_;
@@ -2035,7 +2038,7 @@ int background_solve(
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_ang_distance] = comoving_radius/(1.+pba->z_table[index_loga]);
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_lum_distance] = comoving_radius*(1.+pba->z_table[index_loga]);
   }
-
+  printf("Josh Note (background.c): About to be second derivatives\n");
   /** - fill tables of second derivatives (in view of spline interpolation) */
   class_call(array_spline_table_lines(pba->z_table,
                                       pba->bt_size,
@@ -2220,7 +2223,7 @@ int background_initial_conditions(
                pba->error_message,
                "Search for initial scale factor a such that all ncdm species are relativistic failed.");
   }
-
+  printf("Josh Note (background.c): past ncdm\n");
   /* Set initial values of {B} variables: */
   Omega_rad = pba->Omega0_g;
   if (pba->has_ur == _TRUE_) {
@@ -2445,6 +2448,8 @@ int background_find_f_and_zc(
                              struct precision *ppr,
                              struct background *pba) {
     
+    printf("Josh Note (background.c): FINDING F AND ZC\n");
+    
     double f = 0.;
     double fmax = 0.;
     double zc = 0.;
@@ -2463,13 +2468,13 @@ int background_find_f_and_zc(
         
         index_tau_mid = index_tau_minus;//(int)(0.5*(index_tau_plus+index_tau_minus));
         
-        VV_scf = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_V_e_scf];
-        //scale = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bi_a];
-        scale = pba->index_bg_a;
+        // VV_scf = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_V_e_scf];
+        // scale = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bi_a];
+        // pphi_prime = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_phi_prime_scf];
         
-        pphi_prime = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_phi_prime_scf];
+        // rrho_scf = (pphi_prime*pphi_prime/(2*scale*scale) + VV_scf)/3.;
         
-        rrho_scf = (pphi_prime*pphi_prime/(2*scale*scale) + VV_scf)/3.;
+        rrho_scf = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_rho_scf];
         
         f = rrho_scf / pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_rho_crit];
         
@@ -3013,108 +3018,38 @@ int background_output_budget(
  V_e is the scf potential without the CC. */
 
 double V_e_scf(
-               struct background *pba,
-               double phi) {
+                struct background *pba,
+                double phi) {
     double scf_lambda = pba->scf_parameters[0];
     double scf_alpha  = pba->scf_parameters[1];
     double scf_A      = pba->scf_parameters[2];
     double scf_B      = pba->scf_parameters[3];
     return 4152.39*pow(scf_A,2)*pow(scf_alpha,2)*pow(1-cos(phi*2.435e27/scf_alpha),scf_lambda);
 }
-
-double dV_e_scf(struct background *pba,
-                double phi
-                ) {
-  double scf_lambda = pba->scf_parameters[0];
-  //  double scf_alpha  = pba->scf_parameters[1];
-  //  double scf_A      = pba->scf_parameters[2];
-  //  double scf_B      = pba->scf_parameters[3];
-
-  return -scf_lambda*V_scf(pba,phi);
-}
-
-double ddV_e_scf(struct background *pba,
-                 double phi
-                 ) {
-  double scf_lambda = pba->scf_parameters[0];
-  //  double scf_alpha  = pba->scf_parameters[1];
-  //  double scf_A      = pba->scf_parameters[2];
-  //  double scf_B      = pba->scf_parameters[3];
-
-  return pow(-scf_lambda,2)*V_scf(pba,phi);
-}
-
-
-/** parameters and functions for the polynomial coefficient
- * \f$ V_p = (\phi - B)^\alpha + A \f$(polynomial bump)
- *
- * double scf_alpha = 2;
- *
- * double scf_B = 34.8;
- *
- * double scf_A = 0.01; (values for their Figure 2)
- */
-
-double V_p_scf(
-               struct background *pba,
-               double phi) {
-  //  double scf_lambda = pba->scf_parameters[0];
-  double scf_alpha  = pba->scf_parameters[1];
-  double scf_A      = pba->scf_parameters[2];
-  double scf_B      = pba->scf_parameters[3];
-
-  return  pow(phi - scf_B,  scf_alpha) +  scf_A;
-}
-
-double dV_p_scf(
-                struct background *pba,
-                double phi) {
-
-  //  double scf_lambda = pba->scf_parameters[0];
-  double scf_alpha  = pba->scf_parameters[1];
-  //  double scf_A      = pba->scf_parameters[2];
-  double scf_B      = pba->scf_parameters[3];
-
-  return   scf_alpha*pow(phi -  scf_B,  scf_alpha - 1);
-}
-
-double ddV_p_scf(
-                 struct background *pba,
-                 double phi) {
-  //  double scf_lambda = pba->scf_parameters[0];
-  double scf_alpha  = pba->scf_parameters[1];
-  //  double scf_A      = pba->scf_parameters[2];
-  double scf_B      = pba->scf_parameters[3];
-
-  return  scf_alpha*(scf_alpha - 1.)*pow(phi -  scf_B,  scf_alpha - 2);
-}
-
-/** Fianlly we can obtain the overall potential \f$ V = V_p*V_e \f$
- */
-
+    
 double V_scf(
-             struct background *pba,
-             double phi) {
-    double scf_lambda = pba->scf_parameters[0];
-    double scf_alpha  = pba->scf_parameters[1];
-    double scf_A      = pba->scf_parameters[2];
-    double scf_B      = pba->scf_parameters[3];
-    return 4152.39*pow(scf_A,2)*pow(scf_alpha,2)*pow(1-cos(phi*2.435e27/scf_alpha),scf_lambda) + scf_B*3.968e-8 ;
-}
-
-double dV_scf(
               struct background *pba,
               double phi) {
     double scf_lambda = pba->scf_parameters[0];
     double scf_alpha  = pba->scf_parameters[1];
     double scf_A      = pba->scf_parameters[2];
     double scf_B      = pba->scf_parameters[3];
-    return 4152.39*2.435e27*pow(scf_A,2)*scf_alpha*scf_lambda*sin(phi*2.435e27/scf_alpha)*pow(1-cos(phi*2.435e27/scf_alpha),scf_lambda-1);
+    return 4152.39*pow(scf_A,2)*pow(scf_alpha,2)*pow(1-cos(phi*2.435e27/scf_alpha),scf_lambda) + scf_B*3.968e-8 ;
 }
-
-double ddV_scf(
+    
+double dV_scf(
                struct background *pba,
                double phi) {
+    double scf_lambda = pba->scf_parameters[0];
+    double scf_alpha  = pba->scf_parameters[1];
+    double scf_A      = pba->scf_parameters[2];
+    double scf_B      = pba->scf_parameters[3];
+    return 4152.39*2.435e27*pow(scf_A,2)*scf_alpha*scf_lambda*sin(phi*2.435e27/scf_alpha)*pow(1-cos(phi*2.435e27/scf_alpha),scf_lambda-1);
+}
+    
+double ddV_scf(
+                struct background *pba,
+                double phi) {
     double scf_lambda = pba->scf_parameters[0];
     double scf_alpha  = pba->scf_parameters[1];
     double scf_A      = pba->scf_parameters[2];
@@ -3124,3 +3059,103 @@ double ddV_scf(
     4152.39*2.435e27*2.435e27*pow(scf_A,2)*scf_lambda*pow(1-cos(phi*2.435e27/scf_alpha),scf_lambda-1)*cos(phi*2.435e27/scf_alpha) + 4152.39*2.435e27*2.435e27*pow(scf_A,2)*scf_lambda*(scf_lambda-1)*pow(1-cos(phi*2.435e27/scf_alpha),scf_lambda-2)*pow(sin(phi*2.435e27/scf_alpha),2) ;
     
 }
+
+
+// double V_e_scf(struct background *pba,
+//                double phi
+//                ) {
+//   double scf_lambda = pba->scf_parameters[0];
+//   //  double scf_alpha  = pba->scf_parameters[1];
+//   //  double scf_A      = pba->scf_parameters[2];
+//   //  double scf_B      = pba->scf_parameters[3];
+
+//   return  exp(-scf_lambda*phi);
+// }
+
+// double dV_e_scf(struct background *pba,
+//                 double phi
+//                 ) {
+//   double scf_lambda = pba->scf_parameters[0];
+//   //  double scf_alpha  = pba->scf_parameters[1];
+//   //  double scf_A      = pba->scf_parameters[2];
+//   //  double scf_B      = pba->scf_parameters[3];
+
+//   return -scf_lambda*V_scf(pba,phi);
+// }
+
+// double ddV_e_scf(struct background *pba,
+//                  double phi
+//                  ) {
+//   double scf_lambda = pba->scf_parameters[0];
+//   //  double scf_alpha  = pba->scf_parameters[1];
+//   //  double scf_A      = pba->scf_parameters[2];
+//   //  double scf_B      = pba->scf_parameters[3];
+
+//   return pow(-scf_lambda,2)*V_scf(pba,phi);
+// }
+
+
+// /** parameters and functions for the polynomial coefficient
+//  * \f$ V_p = (\phi - B)^\alpha + A \f$(polynomial bump)
+//  *
+//  * double scf_alpha = 2;
+//  *
+//  * double scf_B = 34.8;
+//  *
+//  * double scf_A = 0.01; (values for their Figure 2)
+//  */
+
+// double V_p_scf(
+//                struct background *pba,
+//                double phi) {
+//   //  double scf_lambda = pba->scf_parameters[0];
+//   double scf_alpha  = pba->scf_parameters[1];
+//   double scf_A      = pba->scf_parameters[2];
+//   double scf_B      = pba->scf_parameters[3];
+
+//   return  pow(phi - scf_B,  scf_alpha) +  scf_A;
+// }
+
+// double dV_p_scf(
+//                 struct background *pba,
+//                 double phi) {
+
+//   //  double scf_lambda = pba->scf_parameters[0];
+//   double scf_alpha  = pba->scf_parameters[1];
+//   //  double scf_A      = pba->scf_parameters[2];
+//   double scf_B      = pba->scf_parameters[3];
+
+//   return   scf_alpha*pow(phi -  scf_B,  scf_alpha - 1);
+// }
+
+// double ddV_p_scf(
+//                  struct background *pba,
+//                  double phi) {
+//   //  double scf_lambda = pba->scf_parameters[0];
+//   double scf_alpha  = pba->scf_parameters[1];
+//   //  double scf_A      = pba->scf_parameters[2];
+//   double scf_B      = pba->scf_parameters[3];
+
+//   return  scf_alpha*(scf_alpha - 1.)*pow(phi -  scf_B,  scf_alpha - 2);
+// }
+
+// /** Fianlly we can obtain the overall potential \f$ V = V_p*V_e \f$
+//  */
+
+// double V_scf(
+//              struct background *pba,
+//              double phi) {
+//   return  V_e_scf(pba,phi)*V_p_scf(pba,phi);
+// }
+
+// double dV_scf(
+//               struct background *pba,
+//               double phi) {
+//   return dV_e_scf(pba,phi)*V_p_scf(pba,phi) + V_e_scf(pba,phi)*dV_p_scf(pba,phi);
+// }
+
+// double ddV_scf(
+//                struct background *pba,
+//                double phi) {
+//   return ddV_e_scf(pba,phi)*V_p_scf(pba,phi) + 2*dV_e_scf(pba,phi)*dV_p_scf(pba,phi) + V_e_scf(pba,phi)*ddV_p_scf(pba,phi);
+// }

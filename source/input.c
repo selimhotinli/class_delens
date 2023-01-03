@@ -69,7 +69,7 @@ int input_init(int argc,
 
   /** Define local variables */
   struct file_content fc;        // Structure with all parameters
-
+  printf("Josh Note (input.c): input_find_file\n");
   /** Find and read input file */
   class_call(input_find_file(argc,
                              argv,
@@ -77,14 +77,14 @@ int input_init(int argc,
                              errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_from_file\n");
   /** Initialize all parameters given the input 'file_content' structure.
       If its size is null, all parameters take their default values. */
   class_call(input_read_from_file(&fc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
                                   errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): parser_free\n");
   /** Free local struture */
   class_call(parser_free(&fc),
              errmsg,
@@ -404,7 +404,7 @@ int input_read_from_file(struct file_content * pfc,
   /** - Define local variables */
   int input_verbose = 0;
   int has_shooting;
-
+  printf("Josh Note (input.c): input_read_precisions\n");
   /** Set default values
       Before getting into the assignment of parameters and the shooting, we want
       to already fix our precision parameters. No precision parameter should
@@ -416,7 +416,7 @@ int input_read_from_file(struct file_content * pfc,
 
   class_read_int("input_verbose",input_verbose);
   if (input_verbose >0) printf("Reading input parameters\n");
-
+  printf("Josh Note (input.c): input_shooting\n");
   /** Find out if shooting necessary and, eventually, shoot and initialize
       read parameters */
   class_call(input_shooting(pfc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
@@ -425,7 +425,7 @@ int input_read_from_file(struct file_content * pfc,
                             errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters\n");
   /** If no shooting is necessary, initialize read parameters without it */
   if (has_shooting == _FALSE_){
     class_call(input_read_parameters(pfc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
@@ -433,7 +433,7 @@ int input_read_from_file(struct file_content * pfc,
                errmsg,
                errmsg);
   }
-
+  printf("Josh Note (input.c): input_write_info\n");
   /** Write info on the read/unread parameters. This is the correct place to do it,
       since we want it to happen after all the shooting business,
       and after the final reading of all parameters */
@@ -524,15 +524,21 @@ int input_shooting(struct file_content * pfc,
   int target_indices[_NUM_TARGETS_];
   int needs_shooting;
   int shooting_failed=_FALSE_;
-
-    /* EDE-edit: include fEDE and zc (order is important here for speed of shooting) */
+  printf("Josh Note (input.c): parameters understood for which shooting is needed\n");
     
-  /* array of parameters passed by the user for which we need shooting (= target parameters) */
-  char * const target_namestrings[] = {"fEDE","log10z_c","100*theta_s","Omega_dcdmdr","omega_dcdmdr",
-                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","sigma8"};
+  /* array of parameters passed by the user for which we need shooting (= target parameters) */                                  
+    /* EDE-edit: include fEDE and zc (order is important here for speed of shooting) */
+char * const target_namestrings[] = {"fEDE",
+                                     "log10z_c",
+                                     "100*theta_s",
+                                     "Omega_dcdmdr",
+                                     "omega_dcdmdr",
+                                     "Omega_scf",
+                                     "Omega_ini_dcdm",
+                                     "omega_ini_dcdm",
+                                     "sigma8"};
   /* array of corresponding parameters that must be adjusted in order to meet the target (= unknown parameters) */
-  char * const unknown_namestrings[] = {"log10f_scf","log10m_scf","h","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","A_s"};
+  char * const unknown_namestrings[] = {"log10f_scf","log10m_scf","h","Omega_ini_dcdm","Omega_ini_dcdm","scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","A_s"};
   /* for each target, module up to which we need to run CLASS in order
      to compute the targetted quantities (not running the whole code
      each time to saves a lot of time) */
@@ -544,7 +550,7 @@ int input_shooting(struct file_content * pfc,
     struct fzerofun_workspace fzw;
 
   *has_shooting=_FALSE_;
-
+  printf("Josh Note (input.c): fixing unknown parameters\n");
   /** Do we need to fix unknown parameters? */
   unknown_parameters_size = 0;
   fzw.required_computation_stage = 0;
@@ -565,26 +571,27 @@ int input_shooting(struct file_content * pfc,
 
       if (needs_shooting == _TRUE_){
         target_indices[unknown_parameters_size] = index_target;
+        printf("Josh Note (input.c): unknown parameter %i: %s\n",index_target,target_namestrings[index_target]);
         fzw.required_computation_stage = MAX(fzw.required_computation_stage,target_cs[index_target]);
         unknown_parameters_size++;
       }
 
     }
   }
-
+  printf("Josh Note (input.c): start shooting\n");
   /** In the case of unknown parameters, start shooting... */
   if (unknown_parameters_size > 0) {
 
     /* We need to remember that we shot so we can clean up properly */
     *has_shooting=_TRUE_;
-
+    printf("Josh Note (input.c): parser_init\n");
     /* Create file content structure with additional entries */
     class_call(parser_init(&(fzw.fc),
                            pfc->size+unknown_parameters_size,
                            pfc->filename,
                            errmsg),
                errmsg,errmsg);
-
+    printf("Josh Note (input.c): copy input file content to new file content structure\n");
     /* Copy input file content to the new file content structure: */
     memcpy(fzw.fc.name, pfc->name, pfc->size*sizeof(FileArg));
     memcpy(fzw.fc.value, pfc->value, pfc->size*sizeof(FileArg));
@@ -604,7 +611,7 @@ int input_shooting(struct file_content * pfc,
     class_alloc(fzw.target_value,
                 fzw.target_size*sizeof(double),
                 errmsg);
-
+    printf("Josh Note (input.c): go through all cases with unknown parameters\n");
     /** Go through all cases with unknown parameters */
     for (counter = 0; counter < unknown_parameters_size; counter++){
       index_target = target_indices[counter];
@@ -625,9 +632,10 @@ int input_shooting(struct file_content * pfc,
          corresponding unknown parameter */
       strcpy(fzw.fc.name[fzw.unknown_parameters_index[counter]],unknown_namestrings[index_target]);
     }
-
+    
     /** If there is only one parameter, we use a more efficient Newton method for 1D cases */
     if (unknown_parameters_size == 1){
+        printf("Josh Note (input.c): 1D shooting\n");
 
       /* We can do 1 dimensional root finding */
       if (input_verbose > 0) {
@@ -636,7 +644,7 @@ int input_shooting(struct file_content * pfc,
                 fzw.fc.name[fzw.unknown_parameters_index[0]],
                 target_namestrings[fzw.target_name[0]]);
       }
-
+      printf("Josh Note (input.c): input_find_root\n");
       /* If shooting fails, postpone error to background module to play nice with MontePython. */
       class_call_try(input_find_root(&xzero,
                                      &fevals,
@@ -646,7 +654,7 @@ int input_shooting(struct file_content * pfc,
                      errmsg,
                      pba->shooting_error,
                      shooting_failed=_TRUE_);
-
+      printf("Josh Note (input.c): store xzero\n");
       /* Store xzero */
       // This needs to be done with enough accuracy. A standard double has a relative
       // precision of around 1e-16, so 1e-20 should be good enough for the shooting
@@ -746,7 +754,7 @@ int input_shooting(struct file_content * pfc,
     free(fzw.target_value);
   }
 
-
+  printf("Josh Note (input.c): special shooting just for sigma8\n");
   /** After the 'normal' shooting is done, do special shooting just for sigma8 if needed*/
   class_call(parser_read_double(pfc,"sigma8",&param1,&flag1,errmsg),
              errmsg,
@@ -914,19 +922,21 @@ int input_find_root(double *xzero,
   double x1, x2, f1, f2, dxdy, dx;
   int iter, iter2;
   int return_function;
-
+  printf("Josh Note (input.c): doing guesses\n");
+  printf("Josh Note (input.c): input_get_guess\n");
   /** Fisrt we do our guess */
   class_call(input_get_guess(&x1, &dxdy, pfzw, errmsg),
              errmsg,
              errmsg);
 
+  printf("Josh Note (input.c): input_fzerofun_1d\n");
   class_call(input_fzerofun_1d(x1, pfzw, &f1, errmsg),
              errmsg,
              errmsg);
 
   (*fevals)++;
   dx = 1.5*f1*dxdy;
-
+  printf("Josh Note (input.c): linear hunt?\n");
   /** Then we do a linear hunt for the boundaries */
   /* Try fifteen times to go above and below the root (i.e. where shooting succeeds) */
   for (iter=1; iter<=15; iter++){
@@ -953,7 +963,7 @@ int input_find_root(double *xzero,
     x1 = x2;
     f1 = f2;
   }
-
+  printf("Josh Note (input.c): RIDDERS METHOD\n");
   /** Find root using Ridders method (Exchange for bisection if you are old-school) */
   class_call(input_fzero_ridder(input_fzerofun_1d,
                                 x1,
@@ -1355,21 +1365,21 @@ int input_try_unknown_parameters(double * unknown_parameter,
   for (i=0; i < unknown_parameters_size; i++) {
     sprintf(pfzw->fc.value[pfzw->unknown_parameters_index[i]],"%.20e",unknown_parameter[i]);
   }
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): input_read_precisions\n");
   class_call(input_read_precisions(&(pfzw->fc),&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,
                                    errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): input_read_parameters\n");
   class_call(input_read_parameters(&(pfzw->fc),&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,
                                    errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): input_read_int\n");
   class_call(parser_read_int(&(pfzw->fc),"input_verbose",&param,&flag,errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): done with calls\n");
   if (flag == _TRUE_)
     input_verbose = param;
   else
@@ -1402,7 +1412,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     fo.has_pk_eq=_FALSE_;
     fo.method=nl_none;
   }
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): shoot forward\n");
   /** Shoot forward into class up to required stage */
   if (pfzw->required_computation_stage >= cs_background){
     if (input_verbose>2)
@@ -1410,7 +1420,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     ba.background_verbose = 0;
     class_call_except(background_init(&pr,&ba), ba.error_message, errmsg, background_free_input(&ba);perturbations_free_input(&pt););
   }
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): done with background\n");
   if (pfzw->required_computation_stage >= cs_thermodynamics){
     if (input_verbose>2)
       printf("Stage 2: thermodynamics\n");
@@ -1420,7 +1430,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     th.hyrec_verbose = 0;
     class_call_except(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg, background_free(&ba);perturbations_free_input(&pt););
   }
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): done with thermodynamics\n");
   if (pfzw->required_computation_stage >= cs_perturbations){
     if (input_verbose>2)
       printf("Stage 3: perturbations\n");
@@ -1455,7 +1465,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     hr.harmonic_verbose = 0;
     class_call_except(harmonic_init(&pr,&ba,&pt,&pm,&fo,&tr,&hr),hr.error_message, errmsg, transfer_free(&tr);fourier_free(&fo);primordial_free(&pm);perturbations_free(&pt);thermodynamics_free(&th);background_free(&ba));
   }
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): get corresponding shoot variable and put into output\n");
   /** Get the corresponding shoot variable and put into output */
   for (i=0; i < pfzw->target_size; i++) {
     switch (pfzw->target_name[i]) {
@@ -1519,7 +1529,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
       break;
     }
   }
-
+  printf("Josh Note (input.c in input_try_unknown_parameters): free structures\n");
   /** Free structures */
   if (pfzw->required_computation_stage >= cs_spectra){
     class_call(harmonic_free(&hr), hr.error_message, errmsg);
@@ -1556,6 +1566,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
   if (pfzw->required_computation_stage < cs_background) {
     background_free_input(&ba);
   }
+  printf("Josh Note (input.c in input_try_unknown_parameters): finish\n");
   return _SUCCESS_;
 
 }
@@ -1692,58 +1703,57 @@ int input_read_parameters(struct file_content * pfc,
                                            errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_injections\n");
   /** Read parameters for exotic energy injection quantities */
   class_call(input_read_parameters_injection(pfc,ppr,pth,
                                              errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_nonlinear\n");
   /** Read parameters for nonlinear quantities */
   class_call(input_read_parameters_nonlinear(pfc,ppr,pba,pth,ppt,pfo,
                                              input_verbose,
                                              errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_primordial\n");
   /** Read parameters for primordial quantities */
   class_call(input_read_parameters_primordial(pfc,ppt,ppm,pba,
                                               errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_spectra\n");
   /** Read parameters for spectra quantities */
   class_call(input_read_parameters_spectra(pfc,ppr,pba,ppm,ppt,ptr,phr,pop,
                                            errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_lensing\n");
   /** Read parameters for lensing quantities */
   class_call(input_read_parameters_lensing(pfc,ppr,ppt,ptr,ple,
                                            errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_distortions\n");
   /** Read parameters for distortions quantities */
   class_call(input_read_parameters_distortions(pfc,ppr,psd,
                                                errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_additional\n");
   /** Read obsolete parameters */
   class_call(input_read_parameters_additional(pfc,ppr,pba,pth,
                                               errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): input_read_parameters_obsolete\n");
   /** Read parameters for output quantities */
   class_call(input_read_parameters_output(pfc,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
                                           errmsg),
              errmsg,
              errmsg);
-
+  printf("Josh Note (input.c): successfully reading parameters\n");
   return _SUCCESS_;
-
 }
 
 
@@ -3329,7 +3339,7 @@ int input_read_parameters_species(struct file_content * pfc,
       class_read_double("cs2_fld",pba->cs2_fld);
     }
   }
-
+  printf("Josh Note (input.c): 8.b\n");
   /** 8.b) If Omega scalar field (SCF) is different from 0 */
   if (pba->Omega0_scf != 0.){
 
@@ -3353,7 +3363,34 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->scf_parameters[0] = param2;
     pba->scf_parameters[3] = param5;
     pba->scf_parameters[4] = param6;
+      
+    /* f or logf*/
+    class_call(parser_read_double(pfc,"log10f_scf",&param31,&flag31,errmsg),errmsg,errmsg);
+    class_call(parser_read_double(pfc,"f_scf",&param32,&flag32,errmsg),errmsg,errmsg);
+    class_test((flag31 == _TRUE_) && (flag32 == _TRUE_),
+             errmsg,
+             "In input file, you cannot enter both logf and f, choose one");
+    if (flag31 == _TRUE_) {
+      pba->scf_parameters[1] = pow(10,param31);
+    }
+    if (flag32 == _TRUE_) {
+     pba->scf_parameters[1] = param32;
+    }
 
+     /* m or logm*/
+    class_call(parser_read_double(pfc,"log10m_scf",&param41,&flag41,errmsg),errmsg,errmsg);
+    class_call(parser_read_double(pfc,"m_scf",&param42,&flag42,errmsg),errmsg,errmsg);
+    class_test((flag41 == _TRUE_) && (flag42 == _TRUE_),
+             errmsg,
+             "In input file, you cannot enter both logm and m, choose one");
+    if (flag41 == _TRUE_) {
+      pba->scf_parameters[2] = pow(10,param41);
+    }
+    if (flag42 == _TRUE_) {
+     pba->scf_parameters[2] = param42;
+    }
+      
+    printf("Josh Note (input.c): done with EDE-edits\n");
     /** 8.b.2) SCF initial conditions from attractor solution */
     /* Read */
     class_call(parser_read_string(pfc,
@@ -3400,7 +3437,7 @@ int input_read_parameters_species(struct file_content * pfc,
       printf("'scf_lambda' = %e < 3 won't be tracking (for exp quint) unless overwritten by tuning function.",scf_lambda);
     }
   }
-
+  printf("Josh Note (input.c): successful input_read_parameters_species\n");
   return _SUCCESS_;
 
 }

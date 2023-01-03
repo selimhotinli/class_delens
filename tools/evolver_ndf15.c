@@ -82,7 +82,7 @@ int evolver_ndf15(
           int (*print_variables)(double x, double y[], double dy[], void *parameters_and_workspace,
                      ErrorMsg error_message),
           ErrorMsg error_message){
-
+  printf("Josh Note (evolver_ndf15.c): BEGIN\n");
   /* Constants: */
   double G[5]={1.0,3.0/2.0,11.0/6.0,25.0/12.0,137.0/60.0};
   double alpha[5]={-37.0/200,-1.0/9.0,-8.23e-2,-4.15e-2, 0};
@@ -179,7 +179,7 @@ int evolver_ndf15(
   /*     class_calloc(dif[1],(7*neq+1),sizeof(double),error_message); */
   /*     dif[0] = NULL; */
   /*     for(j=2;j<=neq;j++) dif[j] = dif[j-1]+7; */ /* Set row pointers... */
-
+  printf("Josh Note (evolver_ndf15.c): about to set pointers\n");
   /*Set pointers:*/
   ynew = y_inout-1; /* This way y_inout is always up to date. */
 
@@ -264,7 +264,7 @@ int evolver_ndf15(
   class_call((*derivs)(t+tdel,y+1,tempvec1+1,parameters_and_workspace_for_derivs,error_message),
              error_message,error_message);
   stepstat[2] += 1;
-
+  printf("Josh Note (evolver_ndf15.c): jacobi assumption\n");
   /*I assume that a full jacobi matrix is always calculated in the beginning...*/
   for(ii=1;ii<=neq;ii++){
     ddfddt[ii]=0.0;
@@ -297,12 +297,12 @@ int evolver_ndf15(
              error_message,error_message);
   stepstat[4] += 1;
   havrate = _FALSE_; /*false*/
-
+  printf("Josh Note (evolver_ndf15.c): about to do main loop\n");
   /* Doing main loop: */
   done = _FALSE_;
   at_hmin = _FALSE_;
   while (done==_FALSE_){
-    /**class_test(stepstat[2] > 1e5, error_message,
+    /*class_test(stepstat[2] > 1e5, error_message,
            "Too many steps in evolver! Current stepsize:%g, in interval: [%g:%g]\n",
            absh,t0,tfinal);*/
     maxtmp = MAX(hmin,absh);
@@ -652,9 +652,9 @@ int evolver_ndf15(
                     error_message,error_message);
     }
 // end of modification
-
+    
   }
-
+  printf("Josh Note (evolver_ndf15.c): end of main loop\n");
   /* a last call is compulsory to ensure that all quantitites in
      y,dy,parameters_and_workspace_for_derivs are updated to the
      last point in the covered range */
@@ -705,7 +705,7 @@ int evolver_ndf15(
   uninitialize_jacobian(&jac);
   uninitialize_numjac_workspace(&nj_ws);
   return _SUCCESS_;
-
+  printf("Josh Note (evolver_ndf15.c): END\n");
 } /*End of program*/
 
 /**********************************************************************/
