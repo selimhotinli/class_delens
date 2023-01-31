@@ -1148,6 +1148,7 @@ int fzero_Newton(int (*func)(double *x,
 
     for (i=1; i<=x_size; i++)
       p[i] = -F0[i-1]; //Right-hand side of linear equations.
+      
     funcreturn = ludcmp(Fjac, x_size, indx, &d, lu_work); //Solve linear equations using LU decomposition.
     class_test(funcreturn == _FAILURE_,error_message,
                "Failure in ludcmp. Possibly singular matrix!");

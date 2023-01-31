@@ -618,7 +618,7 @@ char * const target_namestrings[] = {"fEDE",
          corresponding unknown parameter */
       strcpy(fzw.fc.name[fzw.unknown_parameters_index[counter]],unknown_namestrings[index_target]);
     }
-    
+      
     /** If there is only one parameter, we use a more efficient Newton method for 1D cases */
     if (unknown_parameters_size == 1){
 
