@@ -2448,13 +2448,12 @@ int background_find_f_and_zc(
         
         index_tau_mid = index_tau_minus;//(int)(0.5*(index_tau_plus+index_tau_minus));
         
-        // VV_scf = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_V_e_scf];
+        VV_scf = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_V_e_scf];
         // scale = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bi_a];
-        // pphi_prime = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_phi_prime_scf];
+        scale = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_a];
+        pphi_prime = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_phi_prime_scf];
         
-        // rrho_scf = (pphi_prime*pphi_prime/(2*scale*scale) + VV_scf)/3.;
-        
-        rrho_scf = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_rho_scf];
+        rrho_scf = (pphi_prime*pphi_prime/(2*scale*scale) + VV_scf)/3.;
         
         f = rrho_scf / pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_rho_crit];
         

@@ -1357,14 +1357,12 @@ int input_try_unknown_parameters(double * unknown_parameter,
     input_verbose = param;
   else
     input_verbose = 0;
-
   /** Optimise flags for sigma8 calculation.*/
   for (i=0; i < unknown_parameters_size; i++) {
     if (pfzw->target_name[i] == sigma8) {
       compute_sigma8 = _TRUE_;
     }
   }
-
   /* Sigma8 depends on linear P(k), so no need to run anything except linear P(k) during shooting */
   if (compute_sigma8 == _TRUE_) {
     /* In June 2020 the k_max_for_pk was increased for higher precision,
@@ -1477,7 +1475,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
         /*EDE-edit: added fEDE and z_c. Note: fEDE guess is based upon target value for z_c. This means fEDE can only be shot for in conjunction with z_c. */
     case tn_fEDE:
       output[i] = ba.fEDE-pfzw->target_value[i];
-      /*printf("ba.thetai_scf = %e\n",ba.scf_parameters[ba.scf_parameters_size-2]);
+      /* printf("ba.thetai_scf = %e\n",ba.scf_parameters[ba.scf_parameters_size-2]);
       printf("ba.n_scf = %e\n",ba.scf_parameters[0]);
       printf("ba.fEDE = %e\n",ba.fEDE);
       printf("fEDE target_value = %e\n", pfzw->target_value[i]); */
@@ -1492,7 +1490,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
       }
       //output[i] = ba.log10z_c-pfzw->target_value[i];
       output[i] = ba.log10z_c-log10(z_c_target);
-      /*printf("ba.log10z_c = %e\n",ba.log10z_c);
+      /* printf("ba.log10z_c = %e\n",ba.log10z_c);
       printf("zc target value = %e\n", pfzw->target_value[i]);
       printf("log10(z_c_target_grid) = %e\n",log10(z_c_target)); */
       break;

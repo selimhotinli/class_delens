@@ -105,7 +105,7 @@ int evolver_ndf15(
   double abshlast,hinvGak,minnrm,oldnrm=0.,newnrm;
   double err,hopt,errkm1,hkm1,errit,rate=0.,temp,errkp1,hkp1,maxtmp;
   int k,klast,nconhk,iter,next,kopt,tdir;
-
+  
   /* Misc: */
   int stepstat[6],nfenj,j,ii,jj, numidx, neqp=neq+1;
   int verbose=0;
@@ -180,7 +180,7 @@ int evolver_ndf15(
   /*     for(j=2;j<=neq;j++) dif[j] = dif[j-1]+7; */ /* Set row pointers... */
   /*Set pointers:*/
   ynew = y_inout-1; /* This way y_inout is always up to date. */
-
+  
   /*Initialize the jacobian:*/
   class_call(initialize_jacobian(&jac,neq,error_message),error_message,error_message);
 
@@ -233,7 +233,7 @@ int evolver_ndf15(
   hmax = (tfinal-t0)/10.0;
   t = t0;
 
-
+  
   nfenj=0;
   class_call(numjac((*derivs),t,y,f0,&jac,&nj_ws,abstol,neq,
              &nfenj,parameters_and_workspace_for_derivs,error_message),
@@ -245,7 +245,7 @@ int evolver_ndf15(
   hmin = 16.0*eps*MAX(fabs(t),fabs(tfinal));
   /*Calculate initial step */
   rh = 0.0;
-
+  
   for(jj=1;jj<=neq;jj++){
     wt[jj] = MAX(fabs(y[jj]),threshold);
     /*printf("wt: %4.8f \n",wt[jj]);*/
@@ -254,7 +254,7 @@ int evolver_ndf15(
 
   absh = MIN(hmax, htspan);
   if (absh * rh > 1.0) absh = 1.0 / rh;
-
+  
   absh = MAX(absh, hmin);
   h = tdir * absh;
   tdel = (t + tdir*MIN(sqrt(eps)*MAX(fabs(t),fabs(t+h)),absh)) - t;
@@ -1140,8 +1140,9 @@ int fzero_Newton(int (*func)(double *x,
       class_call(func(x_inout, x_size, param, Fdel, error_message),
                  error_message, error_message);
       /**      printf("F = [%f, %f]\n",Fdel[0],Fdel[1]);*/
-      for (j=1; j<=x_size; j++)
+      for (j=1; j<=x_size; j++) {
         Fjac[j][i] = (Fdel[j-1]-F0[j-1])/delx[i-1];
+      }
       x_inout[i-1] -= delx[i-1];
     }
     *fevals = *fevals + x_size;
@@ -1224,7 +1225,7 @@ int numjac(
     nj_ws->yscale[j] = MAX(fabs(y[j]),thresh);
     nj_ws->del[j] = (y[j] + fac[j] * nj_ws->yscale[j]) - y[j];
   }
-
+  
   /*Select an increment del for a difference approximation to
     column j of dFdy.  The vector fac accounts for experience
     gained in previous calls to numjac.
@@ -1256,7 +1257,7 @@ int numjac(
       nj_ws->del[j] = -fabs(nj_ws->del[j]);
     }
   }
-
+  
   /* Sparse calculation?*/
   if ((jac->use_sparse)&&(jac->repeated_pattern >= jac->trust_sparse)){
     /* printf("\n Sparse calculation..neq=%d, has grouping=%d",neq,jac->has_grouping);*/
@@ -1303,7 +1304,6 @@ int numjac(
     *nfe+=1;
     for(i=1;i<=neq;i++) nj_ws->ydel_Fdel[i][j] = nj_ws->ffdel[i];
   }
-
 
   /*Using the Fdel array, form the jacobian and construct max-value arrays.
     First we do it for the sparse case, then for the normal case:*/
