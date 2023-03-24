@@ -133,13 +133,13 @@ struct lensing {
   int l_size;       /**< number of l values */
 
   int * l_max_lt;    /**< last multipole (given as an input) at which
-		    we want to output \f$ C_l \f$'s for a given mode and type */
+                        we want to output \f$ C_l \f$'s for a given mode and type */
 
   double * l;       /**< table of multipole values l[index_l] */
   double * l_unlensed;
   double * cl_lens; /**< table of anisotropy spectra for each
-			   multipole and types,
-			   cl[index_l * ple->lt_size + index_lt] */
+                       multipole and types,
+                       cl[index_l * ple->lt_size + index_lt] */
 
   double ** cl_lens_derv_TT_TT;
   double ** cl_lens_derv_TE_TE;
@@ -327,6 +327,7 @@ struct lensing {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 	int lensing_cl_at_l(
 						struct lensing * ple,
