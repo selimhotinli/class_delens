@@ -22,22 +22,47 @@ int output_total_cl_at_l(
                          int l,
                          double * cl
                          ){
-    
-    double ** cl_md_ic; /* array with argument
+
+  double ** cl_md_ic; /* array with argument
                          cl_md_ic[index_md][index_ic1_ic2*phr->ct_size+index_ct] */
-    
-    double ** cl_md;    /* array with argument
+
+  double ** cl_md;    /* array with argument
                          cl_md[index_md][index_ct] */
-    
-    int index_md;
-    
-    if (ple->has_lensed_cls == _TRUE_) {
-        class_call(lensing_cl_at_l(ple,
-                                   l,
-                                   cl),
-                   ple->error_message,
-                   pop->error_message);
+
+  int index_md;
+
+  if (ple->has_lensed_cls == _TRUE_) {
+    class_call(lensing_cl_at_l(ple,
+                               l,
+                               cl),
+               ple->error_message,
+               pop->error_message);
+  }
+  else {
+
+    class_alloc(cl_md_ic,
+                phr->md_size*sizeof(double *),
+                pop->error_message);
+
+    class_alloc(cl_md,
+                phr->md_size*sizeof(double *),
+                pop->error_message);
+
+    for (index_md = 0; index_md < phr->md_size; index_md++) {
+
+      if (phr->md_size > 1)
+
+        class_alloc(cl_md[index_md],
+                    phr->ct_size*sizeof(double),
+                    ple->error_message);
+
+      if (phr->ic_size[index_md] > 1)
+
+        class_alloc(cl_md_ic[index_md],
+                    phr->ic_ic_size[index_md]*phr->ct_size*sizeof(double),
+                    ple->error_message);
     }
+
     class_call(harmonic_cl_at_l(phr,
                                 (double)l,
                                 cl,
@@ -55,8 +80,14 @@ int output_total_cl_at_l(
         free(cl_md_ic[index_md]);
 
     }
-    
-    return _SUCCESS_;
+
+    free(cl_md_ic);
+    free(cl_md);
+
+  }
+
+  return _SUCCESS_;
+
 }
 
 /**
@@ -87,117 +118,117 @@ int output_init(
                 struct distortions * psd,
                 struct output * pop
                 ) {
-    
-    /** Summary: */
-    
-    /** - check that we really want to output at least one file */
-    
-    if ((ppt->has_cls == _FALSE_) && (ppt->has_pk_matter == _FALSE_) && (ppt->has_density_transfers == _FALSE_) && (ppt->has_velocity_transfers == _FALSE_) && (pop->write_background == _FALSE_) && (pop->write_thermodynamics == _FALSE_) && (pop->write_primordial == _FALSE_)) {
-        if (pop->output_verbose > 0)
-            printf("No output files requested. Output module skipped.\n");
-        return _SUCCESS_;
-    }
-    else {
-        if (pop->output_verbose > 0)
-            printf("Writing output files in %s... \n",pop->root);
-    }
-    
-    /** - deal with all anisotropy power spectra \f$ C_l\f$'s */
-    
-    if (ppt->has_cls == _TRUE_) {
-        
-        class_call(output_cl(pba,ppt,phr,ple,pop),
-                   pop->error_message,
-                   pop->error_message);
-    }
-    
-    /** - deal with all Fourier matter power spectra P(k)'s */
-    
-    if (ppt->has_pk_matter == _TRUE_) {
-        
-        class_call(output_pk(pba,ppt,pfo,pop,pk_linear),
-                   pop->error_message,
-                   pop->error_message);
-        
-        if (pfo->method != nl_none) {
-            
-            class_call(output_pk(pba,ppt,pfo,pop,pk_nonlinear),
-                       pop->error_message,
-                       pop->error_message);
-            
-        }
-    }
-    
-    /** - deal with density and matter power spectra */
-    
-    if ((ppt->has_density_transfers == _TRUE_) || (ppt->has_velocity_transfers == _TRUE_)) {
-        
-        class_call(output_tk(pba,ppt,pop),
-                   pop->error_message,
-                   pop->error_message);
-        
-    }
-    
-    /** - deal with background quantities */
-    
-    if (pop->write_background == _TRUE_) {
-        
-        class_call(output_background(pba,pop),
-                   pop->error_message,
-                   pop->error_message);
-        
-    }
-    
-    /** - deal with thermodynamics quantities */
-    
-    if (pop->write_thermodynamics == _TRUE_) {
-        
-        class_call(output_thermodynamics(pba,pth,pop),
-                   pop->error_message,
-                   pop->error_message);
-        
-    }
-    
-    /** - deal with perturbation quantities */
-    
-    if (pop->write_perturbations == _TRUE_ && ppt->has_perturbations) {
-        
-        class_call(output_perturbations(pba,ppt,pop),
-                   pop->error_message,
-                   pop->error_message);
-        
-    }
-    
-    /** - deal with primordial spectra */
-    
-    if (pop->write_primordial == _TRUE_ && ppt->has_perturbations) {
-        
-        class_call(output_primordial(ppt,ppm,pop),
-                   pop->error_message,
-                   pop->error_message);
-        
-    }
-    
-    /** - deal with heating */
-    
-    if (pop->write_exotic_injection == _TRUE_ || pop->write_noninjection == _TRUE_) {
-        
-        class_call(output_heating(&(pth->in),&(psd->ni),pop),
-                   pop->error_message,
-                   pop->error_message);
-    }
-    
-    /** - deal with spectral distortions */
-    
-    if (pop->write_distortions == _TRUE_) {
-        
-        class_call(output_distortions(psd,pop),
-                   pop->error_message,
-                   pop->error_message);
-    }
-    
+
+  /** Summary: */
+
+  /** - check that we really want to output at least one file */
+
+  if ((ppt->has_cls == _FALSE_) && (ppt->has_pk_matter == _FALSE_) && (ppt->has_density_transfers == _FALSE_) && (ppt->has_velocity_transfers == _FALSE_) && (pop->write_background == _FALSE_) && (pop->write_thermodynamics == _FALSE_) && (pop->write_primordial == _FALSE_)) {
+    if (pop->output_verbose > 0)
+      printf("No output files requested. Output module skipped.\n");
     return _SUCCESS_;
-    
+  }
+  else {
+    if (pop->output_verbose > 0)
+      printf("Writing output files in %s... \n",pop->root);
+  }
+
+  /** - deal with all anisotropy power spectra \f$ C_l\f$'s */
+
+  if (ppt->has_cls == _TRUE_) {
+
+    class_call(output_cl(pba,ppt,phr,ple,pop),
+               pop->error_message,
+               pop->error_message);
+  }
+
+  /** - deal with all Fourier matter power spectra P(k)'s */
+
+  if (ppt->has_pk_matter == _TRUE_) {
+
+    class_call(output_pk(pba,ppt,pfo,pop,pk_linear),
+               pop->error_message,
+               pop->error_message);
+
+    if (pfo->method != nl_none) {
+
+      class_call(output_pk(pba,ppt,pfo,pop,pk_nonlinear),
+                 pop->error_message,
+                 pop->error_message);
+
+    }
+  }
+
+  /** - deal with density and matter power spectra */
+
+  if ((ppt->has_density_transfers == _TRUE_) || (ppt->has_velocity_transfers == _TRUE_)) {
+
+    class_call(output_tk(pba,ppt,pop),
+               pop->error_message,
+               pop->error_message);
+
+  }
+
+  /** - deal with background quantities */
+
+  if (pop->write_background == _TRUE_) {
+
+    class_call(output_background(pba,pop),
+               pop->error_message,
+               pop->error_message);
+
+  }
+
+  /** - deal with thermodynamics quantities */
+
+  if (pop->write_thermodynamics == _TRUE_) {
+
+    class_call(output_thermodynamics(pba,pth,pop),
+               pop->error_message,
+               pop->error_message);
+
+  }
+
+  /** - deal with perturbation quantities */
+
+  if (pop->write_perturbations == _TRUE_ && ppt->has_perturbations) {
+
+    class_call(output_perturbations(pba,ppt,pop),
+               pop->error_message,
+               pop->error_message);
+
+  }
+
+  /** - deal with primordial spectra */
+
+  if (pop->write_primordial == _TRUE_ && ppt->has_perturbations) {
+
+    class_call(output_primordial(ppt,ppm,pop),
+               pop->error_message,
+               pop->error_message);
+
+  }
+
+  /** - deal with heating */
+
+  if (pop->write_exotic_injection == _TRUE_ || pop->write_noninjection == _TRUE_) {
+
+    class_call(output_heating(&(pth->in),&(psd->ni),pop),
+               pop->error_message,
+               pop->error_message);
+  }
+
+  /** - deal with spectral distortions */
+
+  if (pop->write_distortions == _TRUE_) {
+
+    class_call(output_distortions(psd,pop),
+               pop->error_message,
+               pop->error_message);
+  }
+
+  return _SUCCESS_;
+
 }
 
 /**
@@ -217,23 +248,23 @@ int output_cl(
               struct lensing * ple,
               struct output * pop
               ) {
-    
-    /** Summary: */
-    
-    /** - define local variables */
-    
-    FILE *** out_md_ic; /* array of pointers to files with argument
+
+  /** Summary: */
+
+  /** - define local variables */
+
+  FILE *** out_md_ic; /* array of pointers to files with argument
                          out_md_ic[index_md][index_ic1_ic2]
                          (will contain cl's for each mode and pairs of initial conditions) */
-    
-    FILE ** out_md;     /* array of pointers to files with argument
+
+  FILE ** out_md;     /* array of pointers to files with argument
                          out_md[index_md]
                          (will contain cl's for each mode, summed eventually over ic's) */
+
+  FILE * out;         /* (will contain total cl's, summed eventually over modes and ic's) */
     
-    FILE * out;         /* (will contain total cl's, summed eventually over modes and ic's) */
-    
-    FILE * out_lensed;         /* (will contain total lensed cl's) */
-    
+  FILE * out_lensed;         /* (will contain total lensed cl's) */
+
     FILE * out_delensed; /* DLM */
     
     FILE * out_rcn_noise; /* DLM */
@@ -300,51 +331,51 @@ int output_cl(
     char first_line[_LINE_LENGTH_MAX_];
     
     char derv_type_string[50]; /* DLM */
-    
-    /** - first, allocate all arrays of files and \f$ C_l\f$'s */
-    
-    class_alloc(out_md_ic,
-                phr->md_size*sizeof(FILE * *),
+
+  /** - first, allocate all arrays of files and \f$ C_l\f$'s */
+
+  class_alloc(out_md_ic,
+              phr->md_size*sizeof(FILE * *),
+              pop->error_message);
+
+  class_alloc(cl_md_ic,
+              phr->md_size*sizeof(double *),
+              pop->error_message);
+
+  class_alloc(out_md,
+              phr->md_size*sizeof(FILE *),
+              pop->error_message);
+
+  class_alloc(cl_md,
+              phr->md_size*sizeof(double *),
+              pop->error_message);
+
+  for (index_md = 0; index_md < ppt->md_size; index_md++) {
+
+    class_alloc(out_md_ic[index_md],
+                phr->ic_ic_size[index_md]*sizeof(FILE *),
                 pop->error_message);
-    
-    class_alloc(cl_md_ic,
-                phr->md_size*sizeof(double *),
-                pop->error_message);
-    
-    class_alloc(out_md,
-                phr->md_size*sizeof(FILE *),
-                pop->error_message);
-    
-    class_alloc(cl_md,
-                phr->md_size*sizeof(double *),
-                pop->error_message);
-    
-    for (index_md = 0; index_md < ppt->md_size; index_md++) {
-        
-        class_alloc(out_md_ic[index_md],
-                    phr->ic_ic_size[index_md]*sizeof(FILE *),
-                    pop->error_message);
-        
-    }
-    
-    //   /** - second, open only the relevant files, and write a heading in each of them */
-    
-    sprintf(file_name,"%s%s",pop->root,"cl.dat");
-    
-    class_call(output_open_cl_file(phr,
-                                   pop,
-                                   &out,
-                                   file_name,
-                                   "total [l(l+1)/2pi] C_l's",
-                                   phr->l_max_tot
-                                   ),
-               pop->error_message,
-               pop->error_message);
-    
-    class_alloc(cl_tot,
-                phr->ct_size*sizeof(double),
-                pop->error_message);
-    
+
+  }
+
+  /** - second, open only the relevant files, and write a heading in each of them */
+
+  sprintf(file_name,"%s%s",pop->root,"cl.dat");
+
+  class_call(output_open_cl_file(phr,
+                                 pop,
+                                 &out,
+                                 file_name,
+                                 "total [l(l+1)/2pi] C_l's",
+                                 phr->l_max_tot
+                                 ),
+             pop->error_message,
+             pop->error_message);
+
+  class_alloc(cl_tot,
+              phr->ct_size*sizeof(double),
+              pop->error_message);
+
     class_alloc(cl_tot_dl,
                 ple->dlt_size*sizeof(double),
                 pop->error_message); /* DLM */
@@ -352,22 +383,22 @@ int output_cl(
     class_alloc(nl_tot_dl,
                 ple->nlt_size*sizeof(double),
                 pop->error_message); /* DLM */
-    
-    if (ple->has_lensed_cls == _TRUE_) {
-        
-        sprintf(file_name,"%s%s",pop->root,"cl_lensed.dat");
-        
-        class_call(output_open_cl_file(phr,
-                                       pop,
-                                       &out_lensed,
-                                       file_name,
-                                       "total lensed [l(l+1)/2pi] C_l's",
-                                       ple->l_lensed_max
-                                       ),
-                   pop->error_message,
-                   pop->error_message);
-    }
-    
+
+  if (ple->has_lensed_cls == _TRUE_) {
+
+    sprintf(file_name,"%s%s",pop->root,"cl_lensed.dat");
+
+    class_call(output_open_cl_file(phr,
+                                   pop,
+                                   &out_lensed,
+                                   file_name,
+                                   "total lensed [l(l+1)/2pi] C_l's",
+                                   ple->l_lensed_max
+                                   ),
+               pop->error_message,
+               pop->error_message);
+  }
+
     if (ple->has_delensed_cls == _TRUE_) {
         
         sprintf(file_name,"%s%s",pop->root,"cl_delensed.dat"); /* DLM */
@@ -622,219 +653,217 @@ int output_cl(
             }
         }
     }
-    
-    
-    if (ppt->md_size > 1) {
-        
-        for (index_md = 0; index_md < ppt->md_size; index_md++) {
-            
-            if (_scalars_) {
-                
-                sprintf(file_name,"%s%s",pop->root,"cls.dat");
-                strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar mode");
-                
+
+  if (ppt->md_size > 1) {
+
+    for (index_md = 0; index_md < ppt->md_size; index_md++) {
+
+      if (_scalars_) {
+
+        sprintf(file_name,"%s%s",pop->root,"cls.dat");
+        strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar mode");
+
+      }
+
+      if (_tensors_) {
+
+        sprintf(file_name,"%s%s",pop->root,"clt.dat");
+        strcpy(first_line,"[l(l+1)/2pi] C_l's for tensor mode");
+
+      }
+
+      class_call(output_open_cl_file(phr,
+                                     pop,
+                                     &(out_md[index_md]),
+                                     file_name,
+                                     first_line,
+                                     phr->l_max[index_md]
+                                     ),
+                 pop->error_message,
+                 pop->error_message);
+
+      class_alloc(cl_md[index_md],
+                  phr->ct_size*sizeof(double),
+                  pop->error_message);
+
+    }
+  }
+
+  for (index_md = 0; index_md < ppt->md_size; index_md++) {
+
+    if (ppt->ic_size[index_md] > 1) {
+
+      for (index_ic1 = 0; index_ic1 < ppt->ic_size[index_md]; index_ic1++) {
+
+        for (index_ic2 = index_ic1; index_ic2 < ppt->ic_size[index_md]; index_ic2++) {
+
+          if (_scalars_) {
+
+            if ((ppt->has_ad == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_ad)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_ad.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar adiabatic (AD) mode");
             }
-            
-            if (_tensors_) {
-                
-                sprintf(file_name,"%s%s",pop->root,"clt.dat");
-                strcpy(first_line,"[l(l+1)/2pi] C_l's for tensor mode");
-                
+
+            if ((ppt->has_bi == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_bi)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_bi.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar baryon isocurvature (BI) mode");
             }
-            
+
+            if ((ppt->has_cdi == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_cdi)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_cdi.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar CDM isocurvature (CDI) mode");
+            }
+
+            if ((ppt->has_nid == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_nid)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_nid.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar neutrino density isocurvature (NID) mode");
+            }
+
+            if ((ppt->has_niv == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_niv) && (index_ic2 == ppt->index_ic_niv)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_niv.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar neutrino velocity isocurvature (NIV) mode");
+            }
+
+            if ((ppt->has_ad == _TRUE_) &&
+                (ppt->has_bi == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_bi)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_ad_bi.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxBI mode");
+            }
+
+            if ((ppt->has_ad == _TRUE_) && (ppt->has_cdi == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_cdi)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_ad_cdi.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxCDI mode");
+            }
+
+            if ((ppt->has_ad == _TRUE_) && (ppt->has_nid == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_nid)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_ad_nid.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxNID mode");
+            }
+
+            if ((ppt->has_ad == _TRUE_) && (ppt->has_niv == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_niv)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_ad_niv.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxNIV mode");
+            }
+
+            if ((ppt->has_bi == _TRUE_) && (ppt->has_cdi == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_cdi)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_bi_cdi.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross BIxCDI mode");
+            }
+
+            if ((ppt->has_bi == _TRUE_) && (ppt->has_nid == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_nid)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_bi_nid.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross BIxNID mode");
+            }
+
+            if ((ppt->has_bi == _TRUE_) && (ppt->has_niv == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_niv)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_bi_niv.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross BIxNIV mode");
+            }
+
+            if ((ppt->has_cdi == _TRUE_) && (ppt->has_nid == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_nid)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_cdi_nid.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross CDIxNID mode");
+            }
+
+            if ((ppt->has_cdi == _TRUE_) && (ppt->has_niv == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_niv)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_cdi_niv.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross CDIxNIV mode");
+            }
+
+            if ((ppt->has_nid == _TRUE_) && (ppt->has_niv == _TRUE_) &&
+                (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_niv)) {
+
+              sprintf(file_name,"%s%s",pop->root,"cls_nid_niv.dat");
+              strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross NIDxNIV mode");
+            }
+
+          }
+
+          if (_tensors_) {
+
+            class_test(0==0,
+                       pop->error_message,
+                       "Seems that we have mixed initial conditions for tensors? Should not happen!\n");
+
+          }
+
+          index_ic1_ic2 = index_symmetric_matrix(index_ic1,index_ic2,phr->ic_size[index_md]);
+
+          if (phr->is_non_zero[index_md][index_ic1_ic2] == _TRUE_) {
+
             class_call(output_open_cl_file(phr,
                                            pop,
-                                           &(out_md[index_md]),
+                                           &(out_md_ic[index_md][index_ic1_ic2]),
                                            file_name,
                                            first_line,
                                            phr->l_max[index_md]
                                            ),
                        pop->error_message,
                        pop->error_message);
-            
-            class_alloc(cl_md[index_md],
-                        phr->ct_size*sizeof(double),
-                        pop->error_message);
-            
+
+          }
         }
+      }
+
+      class_alloc(cl_md_ic[index_md],
+                  phr->ic_ic_size[index_md]*phr->ct_size*sizeof(double),
+                  pop->error_message);
     }
-    
-    for (index_md = 0; index_md < ppt->md_size; index_md++) {
-        
-        if (ppt->ic_size[index_md] > 1) {
-            
-            for (index_ic1 = 0; index_ic1 < ppt->ic_size[index_md]; index_ic1++) {
-                
-                for (index_ic2 = index_ic1; index_ic2 < ppt->ic_size[index_md]; index_ic2++) {
-                    
-                    if (_scalars_) {
-                        
-                        if ((ppt->has_ad == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_ad)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_ad.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar adiabatic (AD) mode");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_bi)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_bi.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar baryon isocurvature (BI) mode");
-                        }
-                        
-                        if ((ppt->has_cdi == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_cdi)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_cdi.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar CDM isocurvature (CDI) mode");
-                        }
-                        
-                        if ((ppt->has_nid == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_nid)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_nid.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar neutrino density isocurvature (NID) mode");
-                        }
-                        
-                        if ((ppt->has_niv == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_niv) && (index_ic2 == ppt->index_ic_niv)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_niv.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar neutrino velocity isocurvature (NIV) mode");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) &&
-                            (ppt->has_bi == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_bi)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_ad_bi.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxBI mode");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) && (ppt->has_cdi == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_cdi)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_ad_cdi.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxCDI mode");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) && (ppt->has_nid == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_nid)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_ad_nid.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxNID mode");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) && (ppt->has_niv == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_niv)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_ad_niv.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross ADxNIV mode");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) && (ppt->has_cdi == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_cdi)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_bi_cdi.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross BIxCDI mode");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) && (ppt->has_nid == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_nid)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_bi_nid.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross BIxNID mode");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) && (ppt->has_niv == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_niv)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_bi_niv.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross BIxNIV mode");
-                        }
-                        
-                        if ((ppt->has_cdi == _TRUE_) && (ppt->has_nid == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_nid)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_cdi_nid.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross CDIxNID mode");
-                        }
-                        
-                        if ((ppt->has_cdi == _TRUE_) && (ppt->has_niv == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_niv)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_cdi_niv.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross CDIxNIV mode");
-                        }
-                        
-                        if ((ppt->has_nid == _TRUE_) && (ppt->has_niv == _TRUE_) &&
-                            (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_niv)) {
-                            
-                            sprintf(file_name,"%s%s",pop->root,"cls_nid_niv.dat");
-                            strcpy(first_line,"[l(l+1)/2pi] C_l's for scalar cross NIDxNIV mode");
-                        }
-                        
-                    }
-                    
-                    if (_tensors_) {
-                        
-                        class_test(0==0,
-                                   pop->error_message,
-                                   "Seems that we have mixed initial conditions for tensors? Should not happen!\n");
-                        
-                    }
-                    
-                    index_ic1_ic2 = index_symmetric_matrix(index_ic1,index_ic2,phr->ic_size[index_md]);
-                    
-                    if (phr->is_non_zero[index_md][index_ic1_ic2] == _TRUE_) {
-                        
-                        class_call(output_open_cl_file(phr,
-                                                       pop,
-                                                       &(out_md_ic[index_md][index_ic1_ic2]),
-                                                       file_name,
-                                                       first_line,
-                                                       phr->l_max[index_md]
-                                                       ),
-                                   pop->error_message,
-                                   pop->error_message);
-                        
-                    }
-                }
-            }
-            
-            class_alloc(cl_md_ic[index_md],
-                        phr->ic_ic_size[index_md]*phr->ct_size*sizeof(double),
-                        pop->error_message);
-        }
-    }
-    
-    /** - third, perform loop over l. For each multipole, get all \f$ C_l\f$'s
-     by calling harmonic_cl_at_l() and distribute the results to
-     relevant files */
-    
-    for (l = 2; l <= phr->l_max_tot; l++) {
-        
-        class_call(harmonic_cl_at_l(phr,(double)l,cl_tot,cl_md,cl_md_ic),
-                   phr->error_message,
-                   pop->error_message);
-        
-        class_call(output_one_line_of_cl(pba,phr,pop,out,(double)l,cl_tot,phr->ct_size),
-                   pop->error_message,
-                   pop->error_message);
-        
-        if ((ple->has_lensed_cls == _TRUE_) && (l<=ple->l_lensed_max)) {
-            
-            class_call(lensing_cl_at_l(ple,
-                                       (double)l,
-                                       cl_tot),
-                       ple->error_message,
-                       pop->error_message);
-            
-            class_call(output_one_line_of_cl(pba,phr,pop,out_lensed,l,cl_tot,phr->ct_size),
-                       pop->error_message,
-                       pop->error_message);
-            
-            if (ple->has_lensed_cls==_TRUE_ && (l<=ple->l_delensed_max) && ple->has_delensed_cls == _TRUE_){ /* DLM */
+  }
+
+  /** - third, perform loop over l. For each multipole, get all \f$ C_l\f$'s
+      by calling harmonic_cl_at_l() and distribute the results to
+      relevant files */
+
+  for (l = 2; l <= phr->l_max_tot; l++) {
+
+    class_call(harmonic_cl_at_l(phr,(double)l,cl_tot,cl_md,cl_md_ic),
+               phr->error_message,
+               pop->error_message);
+
+    class_call(output_one_line_of_cl(pba,phr,pop,out,(double)l,cl_tot,phr->ct_size),
+               pop->error_message,
+               pop->error_message);
+
+    if ((ple->has_lensed_cls == _TRUE_) && (l<=ple->l_lensed_max)) {
+
+      class_call(lensing_cl_at_l(ple,
+                                 (double)l,
+                                 cl_tot),
+                 ple->error_message,
+                 pop->error_message);
+
+      class_call(output_one_line_of_cl(pba,phr,pop,out_lensed,l,cl_tot,phr->ct_size),
+                 pop->error_message,
+                 pop->error_message);
+    if (ple->has_lensed_cls==_TRUE_ && (l<=ple->l_delensed_max) && ple->has_delensed_cls == _TRUE_){ /* DLM */
                 
                 class_call(delensing_cl_at_l(ple,
                                              (double)l,
@@ -1444,80 +1473,38 @@ int output_cl(
     }
     
     /** - finally, close files and free arrays of files and \f$ C_l\f$'s */
-    
+
+  for (index_md = 0; index_md < ppt->md_size; index_md++) {
+    if (ppt->ic_size[index_md] > 1) {
+      for (index_ic1_ic2 = 0; index_ic1_ic2 < phr->ic_ic_size[index_md]; index_ic1_ic2++) {
+        if (phr->is_non_zero[index_md][index_ic1_ic2] == _TRUE_) {
+          fclose(out_md_ic[index_md][index_ic1_ic2]);
+        }
+      }
+      free(cl_md_ic[index_md]);
+    }
+  }
+  if (ppt->md_size > 1) {
     for (index_md = 0; index_md < ppt->md_size; index_md++) {
-        if (ppt->ic_size[index_md] > 1) {
-            for (index_ic1_ic2 = 0; index_ic1_ic2 < phr->ic_ic_size[index_md]; index_ic1_ic2++) {
-                if (phr->is_non_zero[index_md][index_ic1_ic2] == _TRUE_) {
-                    fclose(out_md_ic[index_md][index_ic1_ic2]);
-                }
-            }
-            free(cl_md_ic[index_md]);
-        }
+      fclose(out_md[index_md]);
+      free(cl_md[index_md]);
     }
-    if (ppt->md_size > 1) {
-        for (index_md = 0; index_md < ppt->md_size; index_md++) {
-            fclose(out_md[index_md]);
-            free(cl_md[index_md]);
-        }
-    }
-    fclose(out);
-    if (ple->has_lensed_cls == _TRUE_) {
-        fclose(out_lensed);
-    }
-    free(cl_tot);
-    
-    
-    if (ple->has_delensed_cls == _TRUE_) {
-        fclose(out_delensed);
-    }
-    free(cl_tot_dl);
-    
-    if (ple->lens_rec_noise_type == internal_rn) {
-        fclose(out_rcn_noise);
-    }
-    free(nl_tot_dl);
-    
-    if (ple->output_spectra_noise == _TRUE_) {
-        fclose(out_spec_noise);
-    }
-    
-    if (ple->calculate_pderivaties == _TRUE_ && ple->output_derivatives == _TRUE_) {
-        fclose(out_cl_tt_derv);
-        fclose(out_cl_te_derv);
-        fclose(out_cl_ee_derv);
-        fclose(out_cl_bb_derv);
-        if(ple->calculate_derviaties_wrt_unlensed == _TRUE_){
-            if(ple->lensed_wrt_unlensed == _TRUE_){
-                fclose(out_cl_tt_derv_tt);
-                fclose(out_cl_te_derv_te);
-                fclose(out_cl_ee_derv_ee);
-                fclose(out_cl_ee_derv_bb);
-                fclose(out_cl_bb_derv_ee);
-                fclose(out_cl_bb_derv_bb);
-            }
-            if(ple->delensed_wrt_unlensed == _TRUE_){        
-                fclose(out_cl_dl_tt_derv_tt);
-                fclose(out_cl_dl_te_derv_te);
-                fclose(out_cl_dl_ee_derv_ee);
-                fclose(out_cl_dl_ee_derv_bb);
-                fclose(out_cl_dl_bb_derv_ee);
-                fclose(out_cl_dl_bb_derv_bb);
-            }
-        }
-    }
-    
-    
-    for (index_md = 0; index_md < ppt->md_size; index_md++) {
-        free(out_md_ic[index_md]);
-    }
-    free(out_md_ic);
-    free(cl_md_ic);
-    free(out_md);
-    free(cl_md);
-    
-    return _SUCCESS_;
-    
+  }
+  fclose(out);
+  if (ple->has_lensed_cls == _TRUE_) {
+    fclose(out_lensed);
+  }
+  free(cl_tot);
+  for (index_md = 0; index_md < ppt->md_size; index_md++) {
+    free(out_md_ic[index_md]);
+  }
+  free(out_md_ic);
+  free(cl_md_ic);
+  free(out_md);
+  free(cl_md);
+
+  return _SUCCESS_;
+
 }
 
 /**
@@ -1538,71 +1525,71 @@ int output_pk(
               struct output * pop,
               enum pk_outputs pk_output
               ) {
-    
-    /** Summary: */
-    
-    /** - define local variables */
-    
-    FILE ** out_pk_ic = NULL;  /* out_pk_ic[index_ic1_ic2] is a pointer to a file with P(k) for each pair of ic */
-    FILE * out_pk;             /* out_pk[index_pk] is a pointer to a file with total P(k) summed over ic */
-    
-    double * ln_pk_ic = NULL;  /* array ln_pk_ic[index_k * pfo->ic_ic_size + index_ic1_ic2] */
-    double * ln_pk;            /* array ln_pk[index_k] */
-    
-    int index_ic1,index_ic2;
-    int index_ic1_ic2=0;
-    int index_k;
-    int index_z;
-    int index_pk;
-    
-    FileName file_name;
-    
-    char redshift_suffix[7]; // 7 is enough to write "z%d_" as long as there are at most 10'000 bins
-    char type_suffix[9];     // 6 is enough to write "pk_cb_nl" plus closing character \0
-    char first_line[_LINE_LENGTH_MAX_];
-    short do_ic = _FALSE_;
-    
-    /** - preliminary: check whether we need to output the decomposition into contributions from each initial condition */
-    
-    if ((pk_output == pk_linear) && (pfo->ic_size > 1))
-        do_ic = _TRUE_;
-    
-    /** - allocate arrays to store the P(k) */
-    
-    class_alloc(ln_pk,
-                pfo->k_size*sizeof(double),
+
+  /** Summary: */
+
+  /** - define local variables */
+
+  FILE ** out_pk_ic = NULL;  /* out_pk_ic[index_ic1_ic2] is a pointer to a file with P(k) for each pair of ic */
+  FILE * out_pk;             /* out_pk[index_pk] is a pointer to a file with total P(k) summed over ic */
+
+  double * ln_pk_ic = NULL;  /* array ln_pk_ic[index_k * pfo->ic_ic_size + index_ic1_ic2] */
+  double * ln_pk;            /* array ln_pk[index_k] */
+
+  int index_ic1,index_ic2;
+  int index_ic1_ic2=0;
+  int index_k;
+  int index_z;
+  int index_pk;
+
+  FileName file_name;
+
+  char redshift_suffix[7]; // 7 is enough to write "z%d_" as long as there are at most 10'000 bins
+  char type_suffix[9];     // 6 is enough to write "pk_cb_nl" plus closing character \0
+  char first_line[_LINE_LENGTH_MAX_];
+  short do_ic = _FALSE_;
+
+  /** - preliminary: check whether we need to output the decomposition into contributions from each initial condition */
+
+  if ((pk_output == pk_linear) && (pfo->ic_size > 1))
+    do_ic = _TRUE_;
+
+  /** - allocate arrays to store the P(k) */
+
+  class_alloc(ln_pk,
+              pfo->k_size*sizeof(double),
+              pop->error_message);
+
+  if (do_ic == _TRUE_) {
+
+    class_alloc(ln_pk_ic,
+                pfo->k_size*pfo->ic_ic_size*sizeof(double),
                 pop->error_message);
-    
-    if (do_ic == _TRUE_) {
-        
-        class_alloc(ln_pk_ic,
-                    pfo->k_size*pfo->ic_ic_size*sizeof(double),
-                    pop->error_message);
-        
-        /** - allocate pointer to output files */
-        
-        class_alloc(out_pk_ic,
-                    pfo->ic_ic_size*sizeof(FILE *),
-                    pop->error_message);
+
+    /** - allocate pointer to output files */
+
+    class_alloc(out_pk_ic,
+                pfo->ic_ic_size*sizeof(FILE *),
+                pop->error_message);
+  }
+
+  /** - loop over pk type (_cb, _m) */
+
+  for (index_pk=0; index_pk<pfo->pk_size; index_pk++) {
+
+    if ((pfo->has_pk_m == _TRUE_) && (index_pk == pfo->index_pk_m)) {
+      if (pk_output == pk_linear)
+        sprintf(type_suffix,"pk");
+      else
+        sprintf(type_suffix,"pk_nl");
     }
-
-    /** - loop over pk type (_cb, _m) */
-    
-    for (index_pk=0; index_pk<pfo->pk_size; index_pk++) {
-
-        if ((pfo->has_pk_m == _TRUE_) && (index_pk == pfo->index_pk_m)) {
-            if (pk_output == pk_linear)
-            sprintf(type_suffix,"pk");
-            else
-            sprintf(type_suffix,"pk_nl");
-            }
-        if ((pfo->has_pk_cb == _TRUE_) && (index_pk == pfo->index_pk_cb)) {
-        if (pk_output == pk_linear)
+    if ((pfo->has_pk_cb == _TRUE_) && (index_pk == pfo->index_pk_cb)) {
+      if (pk_output == pk_linear)
         sprintf(type_suffix,"pk_cb");
-        else
+      else
         sprintf(type_suffix,"pk_cb_nl");
     }
-      
+
     /** - loop over z */
 
     for (index_z = 0; index_z < pop->z_pk_num; index_z++) {
@@ -1748,7 +1735,7 @@ int output_pk(
                  pop->error_message);
 
       /** - fourth, write in files */
-      
+
       for (index_k=0; index_k<pfo->k_size; index_k++) {
 
         class_call(output_one_line_of_pk(out_pk,
@@ -1773,22 +1760,23 @@ int output_pk(
           }
         }
       } /* end loop over k */
-            
-    /** - fifth, close files */
-            
-    fclose(out_pk);
-            
-    if (do_ic == _TRUE_) {
+
+      /** - fifth, close files */
+
+      fclose(out_pk);
+
+      if (do_ic == _TRUE_) {
         for (index_ic1_ic2 = 0; index_ic1_ic2 < pfo->ic_ic_size; index_ic1_ic2++) {
-            if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
-                fclose(out_pk_ic[index_ic1_ic2]);
-                }
-            }
+          if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
+            fclose(out_pk_ic[index_ic1_ic2]);
+          }
         }
+      }
+
     } /* end loop over index_z */
-        
-    } /* end loop over index_pk */
-    
+
+  } /* end loop over index_pk */
+
   /* free arrays and pointers */
   free(ln_pk);
   if (pk_output == pk_linear) {
@@ -1812,7 +1800,6 @@ int output_tk(
               struct perturbations * ppt,
               struct output * pop
               ) {
-
 
   /** Summary: */
 
@@ -1883,104 +1870,72 @@ int output_tk(
                                               ),
                ppt->error_message,
                pop->error_message);
-    number_of_titles = get_number_of_titles(titles);
-    size_data = number_of_titles*ppt->k_size[index_md];
-    
-    class_alloc(data, sizeof(double)*ppt->ic_size[index_md]*size_data, pop->error_message);
-    
-    for (index_z = 0; index_z < pop->z_pk_num; index_z++) {
-        
-        z = pop->z_pk[index_z];
-        
-        /** - first, check that requested redshift z_pk is consistent */
-        
-        class_test((pop->z_pk[index_z] > ppt->z_max_pk),
-                   pop->error_message,
-                   "T_i(k,z) computed up to z=%f but requested at z=%f. Must increase z_max_pk in precision file.",ppt->z_max_pk,pop->z_pk[index_z]);
-        
-        if (pop->z_pk_num == 1)
-            redshift_suffix[0]='\0';
-        else
-            sprintf(redshift_suffix,"z%d_",index_z+1);
-        
-        /** - second, open only the relevant files, and write a heading in each of them */
-        
-        class_call(perturbations_output_data(pba,
-                                             ppt,
-                                             pop->output_format,
-                                             pop->z_pk[index_z],
-                                             number_of_titles,
-                                             data
-                                             ),
-                   ppt->error_message,
-                   pop->error_message);
-        
-        for (index_ic = 0; index_ic < ppt->ic_size[index_md]; index_ic++) {
-            
-            class_call(perturbations_output_firstline_and_ic_suffix(ppt, index_ic, first_line, ic_suffix),
-                       ppt->error_message, pop->error_message);
-            
-            if ((ppt->has_ad == _TRUE_) && (ppt->ic_size[index_md] == 1) )
-                sprintf(file_name,"%s%s%s",pop->root,redshift_suffix,"tk.dat");
-            else
-                sprintf(file_name,"%s%s%s%s%s",pop->root,redshift_suffix,"tk_",ic_suffix,".dat");
-            
-            class_open(tkfile, file_name, "w", pop->error_message);
-            
-            if (pop->write_header == _TRUE_) {
-                if (pop->output_format == class_format) {
-                    fprintf(tkfile,"# Transfer functions T_i(k) %sat redshift z=%g\n",first_line,z);
-                    fprintf(tkfile,"# for k=%g to %g h/Mpc,\n",ppt->k[index_md][0]/pba->h,ppt->k[index_md][ppt->k_size[index_md]-1]/pba->h);
-                    fprintf(tkfile,"# number of wavenumbers equal to %d\n",ppt->k_size[index_md]);
-                    if (ppt->has_density_transfers == _TRUE_) {
-                        fprintf(tkfile,"# d_i   stands for (delta rho_i/rho_i)(k,z) with above normalization \n");
-                        fprintf(tkfile,"# d_tot stands for (delta rho_tot/rho_tot)(k,z) with rho_Lambda NOT included in rho_tot\n");
-                        fprintf(tkfile,"# (note that this differs from the transfer function output from CAMB/CMBFAST, which gives the same\n");
-                        fprintf(tkfile,"#  quantities divided by -k^2 with k in Mpc^-1; use format=camb to match CAMB)\n");
-                    }
-                    if (ppt->has_velocity_transfers == _TRUE_) {
-                        fprintf(tkfile,"# t_i   stands for theta_i(k,z) with above normalization \n");
-                        fprintf(tkfile,"# t_tot stands for (sum_i [rho_i+p_i] theta_i)/(sum_i [rho_i+p_i]))(k,z)\n");
-                    }
-                    fprintf(tkfile,"#\n");
-                }
-                else if (pop->output_format == camb_format) {
-                    
-                    fprintf(tkfile,"# Rescaled matter transfer functions [-T_i(k)/k^2] %sat redshift z=%g\n",first_line,z);
-                    fprintf(tkfile,"# for k=%g to %g h/Mpc,\n",ppt->k[index_md][0]/pba->h,ppt->k[index_md][ppt->k_size[index_md]-1]/pba->h);
-                    fprintf(tkfile,"# number of wavenumbers equal to %d\n",ppt->k_size[index_md]);
-                    fprintf(tkfile,"# T_i   stands for (delta rho_i/rho_i)(k,z) with above normalization \n");
-                    fprintf(tkfile,"# The rescaling factor [-1/k^2] with k in 1/Mpc is here to match the CMBFAST/CAMB output convention\n");
-                    fprintf(tkfile,"#\n");
-                    fprintf(tkfile,"#");
-                    fprintf(tkfile,"\n");
-                    
-                }
-            }
-            
-            output_print_data(tkfile,
-                              titles,
-                              data+index_ic*size_data,
-                              size_data);
-            
-            /** - free memory and close files */
-            fclose(tkfile);
-            
-            }
-        }   
+
+    for (index_ic = 0; index_ic < ppt->ic_size[index_md]; index_ic++) {
+
+      class_call(perturbations_output_firstline_and_ic_suffix(ppt, index_ic, first_line, ic_suffix),
+                 ppt->error_message, pop->error_message);
+
+      if ((ppt->has_ad == _TRUE_) && (ppt->ic_size[index_md] == 1) )
+        sprintf(file_name,"%s%s%s",pop->root,redshift_suffix,"tk.dat");
+      else
+        sprintf(file_name,"%s%s%s%s%s",pop->root,redshift_suffix,"tk_",ic_suffix,".dat");
+
+      class_open(tkfile, file_name, "w", pop->error_message);
+
+      if (pop->write_header == _TRUE_) {
+        if (pop->output_format == class_format) {
+          fprintf(tkfile,"# Transfer functions T_i(k) %sat redshift z=%g\n",first_line,z);
+          fprintf(tkfile,"# for k=%g to %g h/Mpc,\n",ppt->k[index_md][0]/pba->h,ppt->k[index_md][ppt->k_size[index_md]-1]/pba->h);
+          fprintf(tkfile,"# number of wavenumbers equal to %d\n",ppt->k_size[index_md]);
+          if (ppt->has_density_transfers == _TRUE_) {
+            fprintf(tkfile,"# d_i   stands for (delta rho_i/rho_i)(k,z) with above normalization \n");
+            fprintf(tkfile,"# d_tot stands for (delta rho_tot/rho_tot)(k,z) with rho_Lambda NOT included in rho_tot\n");
+            fprintf(tkfile,"# (note that this differs from the transfer function output from CAMB/CMBFAST, which gives the same\n");
+            fprintf(tkfile,"#  quantities divided by -k^2 with k in Mpc^-1; use format=camb to match CAMB)\n");
+          }
+          if (ppt->has_velocity_transfers == _TRUE_) {
+            fprintf(tkfile,"# t_i   stands for theta_i(k,z) with above normalization \n");
+            fprintf(tkfile,"# t_tot stands for (sum_i [rho_i+p_i] theta_i)/(sum_i [rho_i+p_i]))(k,z)\n");
+          }
+          fprintf(tkfile,"#\n");
+        }
+        else if (pop->output_format == camb_format) {
+
+          fprintf(tkfile,"# Rescaled matter transfer functions [-T_i(k)/k^2] %sat redshift z=%g\n",first_line,z);
+          fprintf(tkfile,"# for k=%g to %g h/Mpc,\n",ppt->k[index_md][0]/pba->h,ppt->k[index_md][ppt->k_size[index_md]-1]/pba->h);
+          fprintf(tkfile,"# number of wavenumbers equal to %d\n",ppt->k_size[index_md]);
+          fprintf(tkfile,"# T_i   stands for (delta rho_i/rho_i)(k,z) with above normalization \n");
+          fprintf(tkfile,"# The rescaling factor [-1/k^2] with k in 1/Mpc is here to match the CMBFAST/CAMB output convention\n");
+          fprintf(tkfile,"#\n");
+          fprintf(tkfile,"#");
+          fprintf(tkfile,"\n");
+
+        }
+      }
+
+      output_print_data(tkfile,
+                        titles,
+                        data+index_ic*size_data,
+                        size_data);
+
+      /** - free memory and close files */
+      fclose(tkfile);
+
     }
-    
-    free(data);
-    
-    return _SUCCESS_;
-    
+
+  }
+
+  free(data);
+
+  return _SUCCESS_;
+
 }
 
 int output_background(
                       struct background * pba,
                       struct output * pop
                       ) {
-
 
   FILE * backfile;
   FileName file_name;
@@ -2236,239 +2191,69 @@ int output_heating(struct injection* pin, struct noninjection* pni, struct outpu
                                      data_injection),
                pin->error_message,
                pop->error_message);
-    number_of_titles = get_number_of_titles(titles);
-    size_data = number_of_titles*pba->bt_size;
-    class_alloc(data,sizeof(double)*size_data,pop->error_message);
-    class_call(background_output_data(pba,
-                                      number_of_titles,
-                                      data),
-               pba->error_message,
+
+    /* File IO */
+    class_open(out_injection,
+               file_name_injection,
+               "w",
                pop->error_message);
 
     if (pop->write_header == _TRUE_){
       fprintf(out_injection,"# Table of energy injection and deposition from exotic processes \n");
       fprintf(out_injection,"# Heat is dE/dt|dep_h\n");
     }
-    
-    output_print_data(backfile,
-                      titles,
-                      data,
-                      size_data);
-    
-    free(data);
-    fclose(backfile);
-    
-    return _SUCCESS_;
-    
-}
 
+    output_print_data(out_injection,
+                      titles_injection,
+                      data_injection,
+                      size_data_injection);
+    free(data_injection);
+    fclose(out_injection);
 
+  }
 
+  if (pop->write_noninjection == _TRUE_){
 
-int output_perturbations(
-                         struct background * pba,
-                         struct perturbations * ppt,
-                         struct output * pop
-                         ) {
-    
-    FILE * out;
-    FileName file_name;
-    int index_ikout, index_md;
-    double k;
-    
-    for (index_ikout=0; index_ikout<ppt->k_output_values_num; index_ikout++){
-        
-        if (ppt->has_scalars == _TRUE_){
-            index_md = ppt->index_md_scalars;
-            k = ppt->k[index_md][ppt->index_k_output_values[index_md*ppt->k_output_values_num+index_ikout]];
-            sprintf(file_name,"%s%s%d%s",pop->root,"perturbations_k",index_ikout,"_s.dat");
-            class_open(out, file_name, "w", ppt->error_message);
-            fprintf(out,"#scalar perturbations for mode k = %.*e Mpc^(-1)\n",_OUTPUTPRECISION_,k);
-            output_print_data(out,
-                              ppt->scalar_titles,
-                              ppt->scalar_perturbations_data[index_ikout],
-                              ppt->size_scalar_perturbation_data[index_ikout]);
-            
-            fclose(out);
-        }
-        if (ppt->has_vectors == _TRUE_){
-            index_md = ppt->index_md_vectors;
-            k = ppt->k[index_md][ppt->index_k_output_values[index_md*ppt->k_output_values_num+index_ikout]];
-            sprintf(file_name,"%s%s%d%s",pop->root,"perturbations_k",index_ikout,"_v.dat");
-            class_open(out, file_name, "w", ppt->error_message);
-            fprintf(out,"#vector perturbations for mode k = %.*e Mpc^(-1)\n",_OUTPUTPRECISION_,k);
-            output_print_data(out,
-                              ppt->vector_titles,
-                              ppt->vector_perturbations_data[index_ikout],
-                              ppt->size_vector_perturbation_data[index_ikout]);
-            
-            fclose(out);
-        }
-        if (ppt->has_tensors == _TRUE_){
-            index_md = ppt->index_md_tensors;
-            k = ppt->k[index_md][ppt->index_k_output_values[index_md*ppt->k_output_values_num+index_ikout]];
-            sprintf(file_name,"%s%s%d%s",pop->root,"perturbations_k",index_ikout,"_t.dat");
-            class_open(out, file_name, "w", ppt->error_message);
-            fprintf(out,"#tensor perturbations for mode k = %.*e Mpc^(-1)\n",_OUTPUTPRECISION_,k);
-            output_print_data(out,
-                              ppt->tensor_titles,
-                              ppt->tensor_perturbations_data[index_ikout],
-                              ppt->size_tensor_perturbation_data[index_ikout]);
-            
-            fclose(out);
-        }
-        
-        
-    }
-    return _SUCCESS_;
-    
-}
+    /* File name */
+    sprintf(file_name_noninjection,"%s%s",pop->root,"photon_noninjection.dat");
 
-int output_primordial(
-                      struct perturbations * ppt,
-                      struct primordial * ppm,
-                      struct output * pop
-                      ) {
-    FileName file_name;
-    FILE * out;
-    char titles[_MAXTITLESTRINGLENGTH_]={0};
-    double * data;
-    int size_data, number_of_titles;
-    
-    sprintf(file_name,"%s%s",pop->root,"primordial_Pk.dat");
-    
-    class_call(primordial_output_titles(ppt,ppm,titles),
-               ppm->error_message,
+    /* Titles */
+    class_call(noninjection_output_titles(pni,titles_noninjection),
+               pni->error_message,
+               pni->error_message);
+    number_of_titles_noninjection = get_number_of_titles(titles_noninjection);
+
+    /* Data array */
+    size_data_noninjection = number_of_titles_noninjection*pin->z_size;
+    class_alloc(data_noninjection,
+                sizeof(double)*size_data_noninjection,
+                pop->error_message);
+    class_call(noninjection_output_data(pni,
+                                        number_of_titles_noninjection,
+                                        data_noninjection),
+               pni->error_message,
                pop->error_message);
-    number_of_titles = get_number_of_titles(titles);
-    size_data = number_of_titles*ppm->lnk_size;
-    class_alloc(data,sizeof(double)*size_data,pop->error_message);
-    class_call(primordial_output_data(ppt,
-                                      ppm,
-                                      number_of_titles,
-                                      data),
-               ppm->error_message,
+
+    /* File IO */
+    class_open(out_noninjection,
+               file_name_noninjection,
+               "w",
                pop->error_message);
 
     if (pop->write_header == _TRUE_){
       fprintf(out_noninjection,"# Table of non-injected energy influencing the photon spectral distortions \n");
     }
-    
-    output_print_data(out,
-                      titles,
-                      data,
-                      size_data);
-    
-    free(data);
-    fclose(out);
-    
-    return _SUCCESS_;
-}
 
-int output_heating(struct injection* pin, struct noninjection* pni, struct output * pop) {
-    
-    /** Local variables*/
-    FileName file_name_injection;
-    FILE * out_injection;
-    FileName file_name_noninjection;
-    FILE * out_noninjection;
-    
-    char titles_injection[_MAXTITLESTRINGLENGTH_]={0};
-    
-    double * data_injection;
-    int size_data_injection;
-    int number_of_titles_injection;
-    
-    char titles_noninjection[_MAXTITLESTRINGLENGTH_]={0};
-    
-    double * data_noninjection;
-    int size_data_noninjection;
-    int number_of_titles_noninjection;
-    
-    if(pop->write_exotic_injection == _TRUE_){
-        
-        /* File name */
-        sprintf(file_name_injection,"%s%s",pop->root,"exotic_injection.dat");
-        
-        /* Titles */
-        class_call(injection_output_titles(pin,titles_injection),
-                   pin->error_message,
-                   pin->error_message);
-        number_of_titles_injection = get_number_of_titles(titles_injection);
-        
-        /* Data array */
-        size_data_injection = number_of_titles_injection*pin->z_size;
-        class_alloc(data_injection,
-                    sizeof(double)*size_data_injection,
-                    pop->error_message);
-        class_call(injection_output_data(pin,
-                                         number_of_titles_injection,
-                                         data_injection),
-                   pin->error_message,
-                   pop->error_message);
-        
-        /* File IO */
-        class_open(out_injection,
-                   file_name_injection,
-                   "w",
-                   pop->error_message);
-        
-        if(pop->write_header == _TRUE_){
-            fprintf(out_injection,"# Table of energy injection and deposition from exotic processes \n");
-            fprintf(out_injection,"# Heat is dE/dt|dep_h\n");
-        }
-        
-        output_print_data(out_injection,
-                          titles_injection,
-                          data_injection,
-                          size_data_injection);
-        free(data_injection);
-        fclose(out_injection);
-        
-    }
-    
-    if(pop->write_noninjection == _TRUE_){
-        
-        /* File name */
-        sprintf(file_name_noninjection,"%s%s",pop->root,"photon_noninjection.dat");
-        
-        /* Titles */
-        class_call(noninjection_output_titles(pni,titles_noninjection),
-                   pni->error_message,
-                   pni->error_message);
-        number_of_titles_noninjection = get_number_of_titles(titles_noninjection);
-        
-        /* Data array */
-        size_data_noninjection = number_of_titles_noninjection*pin->z_size;
-        class_alloc(data_noninjection,
-                    sizeof(double)*size_data_noninjection,
-                    pop->error_message);
-        class_call(noninjection_output_data(pni,
-                                            number_of_titles_noninjection,
-                                            data_noninjection),
-                   pni->error_message,
-                   pop->error_message);
-        
-        /* File IO */
-        class_open(out_noninjection,
-                   file_name_noninjection,
-                   "w",
-                   pop->error_message);
-        
-        if(pop->write_header == _TRUE_){
-            fprintf(out_noninjection,"# Table of non-injected energy influencing the photon spectral distortions \n");
-        }
-        
-        output_print_data(out_noninjection,
-                          titles_noninjection,
-                          data_noninjection,
-                          size_data_noninjection);
-        free(data_noninjection);
-        fclose(out_noninjection);
-        
-    }
-    
-    return _SUCCESS_;
+    output_print_data(out_noninjection,
+                      titles_noninjection,
+                      data_noninjection,
+                      size_data_noninjection);
+    free(data_noninjection);
+    fclose(out_noninjection);
+
+  }
+
+  return _SUCCESS_;
 }
 
 int output_distortions(
@@ -2560,8 +2345,16 @@ int output_distortions(
       fprintf(out_distortion,"# The SDs are given in units [10^-26 W m^-2 Hz^-1 sr^-1] \n");
       fprintf(out_distortion,"#\n");
     }
-    
-    return _SUCCESS_;
+
+    output_print_data(out_distortion,
+                      titles_distortion,
+                      data_distortion,
+                      size_data_distortion);
+    free(data_distortion);
+    fclose(out_distortion);
+  }
+
+  return _SUCCESS_;
 }
 
 
@@ -2569,36 +2362,36 @@ int output_print_data(FILE *out,
                       char titles[_MAXTITLESTRINGLENGTH_],
                       double *dataptr,
                       int size_dataptr){
-    int colnum=1, number_of_titles;
-    int index_title, index_tau;
-    char thetitle[_MAXTITLESTRINGLENGTH_];
-    char *pch;
-    
-    /** Summary*/
-    
-    /** - First we print the titles */
-    fprintf(out,"#");
-    
-    strcpy(thetitle,titles);
-    pch = strtok(thetitle,_DELIMITER_);
-    while (pch != NULL){
-        class_fprintf_columntitle(out, pch, _TRUE_, colnum);
-        pch = strtok(NULL,_DELIMITER_);
+  int colnum=1, number_of_titles;
+  int index_title, index_tau;
+  char thetitle[_MAXTITLESTRINGLENGTH_];
+  char *pch;
+
+  /** Summary*/
+
+  /** - First we print the titles */
+  fprintf(out,"#");
+
+  strcpy(thetitle,titles);
+  pch = strtok(thetitle,_DELIMITER_);
+  while (pch != NULL){
+    class_fprintf_columntitle(out, pch, _TRUE_, colnum);
+    pch = strtok(NULL,_DELIMITER_);
+  }
+  fprintf(out,"\n");
+
+  /** - Then we print the data */
+  number_of_titles = colnum-1;
+  if (number_of_titles>0){
+    for (index_tau=0; index_tau<size_dataptr/number_of_titles; index_tau++){
+      fprintf(out," ");
+      for (index_title=0; index_title<number_of_titles; index_title++){
+        class_fprintf_double(out, dataptr[index_tau*number_of_titles+index_title], _TRUE_);
+      }
+      fprintf(out,"\n");
     }
-    fprintf(out,"\n");
-    
-    /** - Then we print the data */
-    number_of_titles = colnum-1;
-    if (number_of_titles>0){
-        for (index_tau=0; index_tau<size_dataptr/number_of_titles; index_tau++){
-            fprintf(out," ");
-            for (index_title=0; index_title<number_of_titles; index_title++){
-                class_fprintf_double(out, dataptr[index_tau*number_of_titles+index_title], _TRUE_);
-            }
-            fprintf(out,"\n");
-        }
-    }
-    return _SUCCESS_;
+  }
+  return _SUCCESS_;
 }
 
 
@@ -2623,133 +2416,334 @@ int output_open_cl_file(
                         char * first_line,
                         int lmax
                         ) {
-    /** Summary */
-    
-    int index_d1,index_d2;
-    int colnum = 1;
-    char tmp[60]; //A fixed number here is ok, since it should just correspond to the largest string which is printed to tmp.
-    
-    class_open(*clfile,filename,"w",pop->error_message);
-    
-    if (pop->write_header == _TRUE_) {
-        
-        /** - First we deal with the entries that are dependent of format type */
-        
-        if (pop->output_format == class_format) {
-            fprintf(*clfile,"# dimensionless %s\n",first_line);
-        }
-        if (pop->output_format == camb_format) {
-            fprintf(*clfile,"# %s (units: [microK]^2)\n",first_line);
-        }
-        
-        fprintf(*clfile,"# for l=2 to %d, i.e. number of multipoles equal to %d\n",lmax,lmax-1);
-        fprintf(*clfile,"#\n");
-        
-        if (pop->output_format == class_format) {
-            fprintf(*clfile,"# -> if you prefer output in CAMB/HealPix/LensPix units/order, set 'format' to 'camb' in input file\n");
-        }
-        
-        fprintf(*clfile,"# -> if you don't want to see such a header, set 'headers' to 'no' in input file\n");
-        
-        if (phr->has_pp == _TRUE_) {
-            if (pop->output_format == class_format) {
-                fprintf(*clfile,"# -> for CMB lensing (phi), these are C_l^phi-phi for the lensing potential.\n");
-            }
-            if (pop->output_format == camb_format) {
-                fprintf(*clfile,"# -> for CMB lensing (d), these are C_l^dd for the deflection field.\n");
-            }
-        }
-        
-        if (phr->has_ll == _TRUE_) {
-            fprintf(*clfile,"# -> for galaxy lensing (lens[i]), these are C_l^phi-phi for the lensing potential.\n");
-        }
-        
-        if (phr->has_pp == _TRUE_ || phr->has_ll == _TRUE_) {
-            fprintf(*clfile,"#    Remember the conversion factors:\n");
-            fprintf(*clfile,"#    C_l^dd (deflection) = l(l+1) C_l^phi-phi\n");
-            fprintf(*clfile,"#    C_l^gg (shear/convergence) = 1/4 (l(l+1))^2 C_l^phi-phi\n");
-        }
-        
-        fprintf(*clfile,"#\n");
-        
-        if (0==1){
-            fprintf(*clfile,"#");
-            class_fprintf_columntitle(*clfile,"l",_TRUE_,colnum);
-        }
-        else{
-            fprintf(*clfile,"# 1:l ");
-            colnum++;
-        }
-        if (pop->output_format == class_format) {
-            class_fprintf_columntitle(*clfile,"TT",phr->has_tt,colnum);
-            class_fprintf_columntitle(*clfile,"EE",phr->has_ee,colnum);
-            class_fprintf_columntitle(*clfile,"TE",phr->has_te,colnum);
-            class_fprintf_columntitle(*clfile,"BB",phr->has_bb,colnum);
-            class_fprintf_columntitle(*clfile,"phiphi",phr->has_pp,colnum);
-            class_fprintf_columntitle(*clfile,"TPhi",phr->has_tp,colnum);
-            class_fprintf_columntitle(*clfile,"Ephi",phr->has_ep,colnum);
-        }
-        else if (pop->output_format == camb_format) {
-            class_fprintf_columntitle(*clfile,"TT",phr->has_tt,colnum);
-            class_fprintf_columntitle(*clfile,"EE",phr->has_ee,colnum);
-            class_fprintf_columntitle(*clfile,"BB",phr->has_bb,colnum);
-            class_fprintf_columntitle(*clfile,"TE",phr->has_te,colnum);
-            class_fprintf_columntitle(*clfile,"dd",phr->has_pp,colnum);
-            class_fprintf_columntitle(*clfile,"dT",phr->has_tp,colnum);
-            class_fprintf_columntitle(*clfile,"dE",phr->has_ep,colnum);
-        }
-        
-        /** - Next deal with entries that are independent of format type */
-        
-        if (phr->has_dd == _TRUE_){
-            for (index_d1=0; index_d1<phr->d_size; index_d1++){
-                for (index_d2=index_d1; index_d2<=MIN(index_d1+phr->non_diag,phr->d_size-1); index_d2++){
-                    sprintf(tmp,"dens[%d]-dens[%d]",index_d1+1,index_d2+1);
-                    class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
-                }
-            }
-        }
-        if (phr->has_td == _TRUE_){
-            for (index_d1=0; index_d1<phr->d_size; index_d1++){
-                sprintf(tmp,"T-dens[%d]",index_d1+1);
-                class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
-            }
-        }
-        if (phr->has_pd == _TRUE_){
-            for (index_d1=0; index_d1<phr->d_size; index_d1++){
-                sprintf(tmp,"phi-dens[%d]",index_d1+1);
-                class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
-            }
-        }
-        if (phr->has_ll == _TRUE_){
-            for (index_d1=0; index_d1<phr->d_size; index_d1++){
-                for (index_d2=index_d1; index_d2<=MIN(index_d1+phr->non_diag,phr->d_size-1); index_d2++){
-                    sprintf(tmp,"lens[%d]-lens[%d]",index_d1+1,index_d2+1);
-                    class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
-                }
-            }
-        }
-        if (phr->has_tl == _TRUE_){
-            for (index_d1=0; index_d1<phr->d_size; index_d1++){
-                sprintf(tmp,"T-lens[%d]",index_d1+1);
-                class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
-            }
-        }
-        if (phr->has_dl == _TRUE_){
-            for (index_d1=0; index_d1<phr->d_size; index_d1++){
-                for (index_d2=MAX(index_d1-phr->non_diag,0); index_d2<=MIN(index_d1+phr->non_diag,phr->d_size-1); index_d2++) {
-                    sprintf(tmp,"dens[%d]-lens[%d]",index_d1+1,index_d2+1);
-                    class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
-                }
-            }
-        }
-        fprintf(*clfile,"\n");
+  /** Summary */
+
+  int index_d1,index_d2;
+  int colnum = 1;
+  char tmp[60]; //A fixed number here is ok, since it should just correspond to the largest string which is printed to tmp.
+
+  class_open(*clfile,filename,"w",pop->error_message);
+
+  if (pop->write_header == _TRUE_) {
+
+    /** - First we deal with the entries that are dependent of format type */
+
+    if (pop->output_format == class_format) {
+      fprintf(*clfile,"# dimensionless %s\n",first_line);
     }
+    if (pop->output_format == camb_format) {
+      fprintf(*clfile,"# %s (units: [microK]^2)\n",first_line);
+    }
+
+    fprintf(*clfile,"# for l=2 to %d, i.e. number of multipoles equal to %d\n",lmax,lmax-1);
+    fprintf(*clfile,"#\n");
+
+    if (pop->output_format == class_format) {
+      fprintf(*clfile,"# -> if you prefer output in CAMB/HealPix/LensPix units/order, set 'format' to 'camb' in input file\n");
+    }
+
+    fprintf(*clfile,"# -> if you don't want to see such a header, set 'headers' to 'no' in input file\n");
+
+    if (phr->has_pp == _TRUE_) {
+      if (pop->output_format == class_format) {
+        fprintf(*clfile,"# -> for CMB lensing (phi), these are C_l^phi-phi for the lensing potential.\n");
+      }
+      if (pop->output_format == camb_format) {
+        fprintf(*clfile,"# -> for CMB lensing (d), these are C_l^dd for the deflection field.\n");
+      }
+    }
+
+    if (phr->has_ll == _TRUE_) {
+      fprintf(*clfile,"# -> for galaxy lensing (lens[i]), these are C_l^phi-phi for the lensing potential.\n");
+    }
+
+    if (phr->has_pp == _TRUE_ || phr->has_ll == _TRUE_) {
+      fprintf(*clfile,"#    Remember the conversion factors:\n");
+      fprintf(*clfile,"#    C_l^dd (deflection) = l(l+1) C_l^phi-phi\n");
+      fprintf(*clfile,"#    C_l^gg (shear/convergence) = 1/4 (l(l+1))^2 C_l^phi-phi\n");
+    }
+
+    fprintf(*clfile,"#\n");
+
+    if (0==1){
+      fprintf(*clfile,"#");
+      class_fprintf_columntitle(*clfile,"l",_TRUE_,colnum);
+    }
+    else{
+      fprintf(*clfile,"# 1:l ");
+      colnum++;
+    }
+    if (pop->output_format == class_format) {
+      class_fprintf_columntitle(*clfile,"TT",phr->has_tt,colnum);
+      class_fprintf_columntitle(*clfile,"EE",phr->has_ee,colnum);
+      class_fprintf_columntitle(*clfile,"TE",phr->has_te,colnum);
+      class_fprintf_columntitle(*clfile,"BB",phr->has_bb,colnum);
+      class_fprintf_columntitle(*clfile,"phiphi",phr->has_pp,colnum);
+      class_fprintf_columntitle(*clfile,"TPhi",phr->has_tp,colnum);
+      class_fprintf_columntitle(*clfile,"Ephi",phr->has_ep,colnum);
+    }
+    else if (pop->output_format == camb_format) {
+      class_fprintf_columntitle(*clfile,"TT",phr->has_tt,colnum);
+      class_fprintf_columntitle(*clfile,"EE",phr->has_ee,colnum);
+      class_fprintf_columntitle(*clfile,"BB",phr->has_bb,colnum);
+      class_fprintf_columntitle(*clfile,"TE",phr->has_te,colnum);
+      class_fprintf_columntitle(*clfile,"dd",phr->has_pp,colnum);
+      class_fprintf_columntitle(*clfile,"dT",phr->has_tp,colnum);
+      class_fprintf_columntitle(*clfile,"dE",phr->has_ep,colnum);
+    }
+
+    /** - Next deal with entries that are independent of format type */
+
+    if (phr->has_dd == _TRUE_){
+      for (index_d1=0; index_d1<phr->d_size; index_d1++){
+        for (index_d2=index_d1; index_d2<=MIN(index_d1+phr->non_diag,phr->d_size-1); index_d2++){
+          sprintf(tmp,"dens[%d]-dens[%d]",index_d1+1,index_d2+1);
+          class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
+        }
+      }
+    }
+    if (phr->has_td == _TRUE_){
+      for (index_d1=0; index_d1<phr->d_size; index_d1++){
+        sprintf(tmp,"T-dens[%d]",index_d1+1);
+        class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
+      }
+    }
+    if (phr->has_pd == _TRUE_){
+      for (index_d1=0; index_d1<phr->d_size; index_d1++){
+        sprintf(tmp,"phi-dens[%d]",index_d1+1);
+        class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
+      }
+    }
+    if (phr->has_ll == _TRUE_){
+      for (index_d1=0; index_d1<phr->d_size; index_d1++){
+        for (index_d2=index_d1; index_d2<=MIN(index_d1+phr->non_diag,phr->d_size-1); index_d2++){
+          sprintf(tmp,"lens[%d]-lens[%d]",index_d1+1,index_d2+1);
+          class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
+        }
+      }
+    }
+    if (phr->has_tl == _TRUE_){
+      for (index_d1=0; index_d1<phr->d_size; index_d1++){
+        sprintf(tmp,"T-lens[%d]",index_d1+1);
+        class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
+      }
+    }
+    if (phr->has_dl == _TRUE_){
+      for (index_d1=0; index_d1<phr->d_size; index_d1++){
+        for (index_d2=MAX(index_d1-phr->non_diag,0); index_d2<=MIN(index_d1+phr->non_diag,phr->d_size-1); index_d2++) {
+          sprintf(tmp,"dens[%d]-lens[%d]",index_d1+1,index_d2+1);
+          class_fprintf_columntitle(*clfile,tmp,_TRUE_,colnum);
+        }
+      }
+    }
+    fprintf(*clfile,"\n");
+  }
+
+  return _SUCCESS_;
+
+}
+
+/**
+ * This routine write one line with l and all \f$ C_l\f$'s for all types (TT, TE...)
+ *
+ * @param pba        Input: pointer to background structure (needed for \f$ T_{cmb}\f$)
+ * @param phr        Input: pointer to harmonic structure
+ * @param pop        Input: pointer to output structure
+ * @param clfile  Input: file pointer
+ * @param l       Input: multipole
+ * @param cl      Input: \f$ C_l\f$'s for all types
+ * @param ct_size Input: number of types
+ * @return the error status
+ */
+
+int output_one_line_of_cl(
+                          struct background * pba,
+                          struct harmonic * phr,
+                          struct output * pop,
+                          FILE * clfile,
+                          double l,
+                          double * cl, /* array with argument cl[index_ct] */
+                          int ct_size
+                          ) {
+  int index_ct, index_ct_rest;
+  double factor;
+
+  factor = l*(l+1)/2./_PI_;
+
+  fprintf(clfile," ");
+
+  if (0==1){
+    class_fprintf_int(clfile, (int)l, _TRUE_);
+  }
+  else{
+    fprintf(clfile,"%4d ",(int)l);
+  }
+
+  if (pop->output_format == class_format) {
+
+    for (index_ct=0; index_ct < ct_size; index_ct++) {
+      class_fprintf_double(clfile, factor*cl[index_ct], _TRUE_);
+    }
+    fprintf(clfile,"\n");
+  }
+
+  if (pop->output_format == camb_format) {
+    class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_tt], phr->has_tt);
+    class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_ee], phr->has_ee);
+    class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_bb], phr->has_bb);
+    class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_te], phr->has_te);
+    class_fprintf_double(clfile, l*(l+1)*factor*cl[phr->index_ct_pp], phr->has_pp);
+    class_fprintf_double(clfile, sqrt(l*(l+1))*factor*pba->T_cmb*1.e6*cl[phr->index_ct_tp], phr->has_tp);
+    class_fprintf_double(clfile, sqrt(l*(l+1))*factor*pba->T_cmb*1.e6*cl[phr->index_ct_ep], phr->has_ep);
+    index_ct_rest = 0;
+    if (phr->has_tt == _TRUE_)
+      index_ct_rest++;
+    if (phr->has_ee == _TRUE_)
+      index_ct_rest++;
+    if (phr->has_bb == _TRUE_)
+      index_ct_rest++;
+    if (phr->has_te == _TRUE_)
+      index_ct_rest++;
+    if (phr->has_pp == _TRUE_)
+      index_ct_rest++;
+    if (phr->has_tp == _TRUE_)
+      index_ct_rest++;
+    if (phr->has_ep == _TRUE_)
+      index_ct_rest++;
+    /* Now print the remaining (if any) entries:*/
+    for (index_ct=index_ct_rest; index_ct < ct_size; index_ct++) {
+      class_fprintf_double(clfile, factor*cl[index_ct], _TRUE_);
+    }
+
+    fprintf(clfile,"\n");
+
+  }
+  return _SUCCESS_;
+
+}
+
+/**
+ * This routine opens one file where some P(k)'s will be written, and writes
+ * a heading with some general information concerning its content.
+ *
+ * @param pba        Input: pointer to background structure (needed for h)
+ * @param pfo        Input: pointer to fourier structure
+ * @param pop        Input: pointer to output structure
+ * @param pkfile     Output: returned pointer to file pointer
+ * @param filename   Input: name of the file
+ * @param first_line Input: text describing the content (initial conditions, ...)
+ * @param z          Input: redshift of the output
+ * @return the error status
+ */
+
+int output_open_pk_file(
+                        struct background * pba,
+                        struct fourier * pfo,
+                        struct output * pop,
+                        FILE * * pkfile,
+                        FileName filename,
+                        char * first_line,
+                        double z
+                        ) {
+
+  int colnum = 1;
+  class_open(*pkfile,filename,"w",pop->error_message);
+
+  if (pop->write_header == _TRUE_) {
+    fprintf(*pkfile,"# Matter power spectrum P(k) %sat redshift z=%g\n",first_line,z);
+    fprintf(*pkfile,"# for k=%g to %g h/Mpc,\n",
+            exp(pfo->ln_k[0])/pba->h,
+            exp(pfo->ln_k[pfo->k_size-1])/pba->h);
+    fprintf(*pkfile,"# number of wavenumbers equal to %d\n",pfo->k_size);
+
+    fprintf(*pkfile,"#");
+    class_fprintf_columntitle(*pkfile,"k (h/Mpc)",_TRUE_,colnum);
+    class_fprintf_columntitle(*pkfile,"P (Mpc/h)^3",_TRUE_,colnum);
+
+    fprintf(*pkfile,"\n");
+  }
+
+  return _SUCCESS_;
+}
+
+/**
+ * This routine writes one line with k and P(k)
+ *
+ * @param pkfile  Input: file pointer
+ * @param one_k   Input: wavenumber
+ * @param one_pk  Input: matter power spectrum
+ * @return the error status
+ */
+
+int output_one_line_of_pk(
+                          FILE * pkfile,
+                          double one_k,
+                          double one_pk
+                          ) {
+
+  fprintf(pkfile," ");
+  class_fprintf_double(pkfile,one_k,_TRUE_);
+  class_fprintf_double(pkfile,one_pk,_TRUE_);
+  fprintf(pkfile,"\n");
+
+  return _SUCCESS_;
+
+}
+
+/** DLM
+ * This routine write one line with l and all \f$ N_l\f$'s (lensing reconstruction noise spectra) for all types (TT, TE...)
+ *
+ * @param pba        Input: pointer to background structure (needed for \f$ T_{cmb}\f$)
+ * @param phr        Input: pointer to harmonic structure
+ * @param pop        Input: pointer to output structure
+ * @param nlfile  Input: file pointer
+ * @param l       Input: multipole
+ * @param nl      Input: \f$ N_l\f$'s for all types
+ * @param nlt_size Input: number of types
+ * @return the error status
+ */
+
+int output_one_line_of_nl(/* NOISE FILE */
+                          struct background * pba,
+                          struct harmonic * phr,
+                          struct output * pop,
+                          FILE * clfile,
+                          double l,
+                          double * nl, /* array with argument cl[index_ct] */
+                          int nlt_size
+                          ) {
+    int index_ct, index_ct_rest;
+    double factor;
+    
+    factor = l*(l+1)/2./_PI_;
+    
+    fprintf(clfile," ");
+    
+    if (0==1){
+        class_fprintf_int(clfile, (int)l, _TRUE_);
+    }
+    else{
+        fprintf(clfile,"%4d ",(int)l);
+    }
+    
+    for (index_ct=0; index_ct < nlt_size; index_ct++) {
+        class_fprintf_double(clfile, factor*nl[index_ct], _TRUE_);
+    }
+    fprintf(clfile,"\n");
     
     return _SUCCESS_;
     
 }
 
+/**  DLM
+ * This routine opens one file where temperature and polarization noise will be written, and writes
+ * a heading with some general information concerning its content.
+ *
+ * @param ple        Lensing: getting the maximum multipole number
+ * @param filename   Input: name of the file
+ * @param first_line Input: text describing the content (initial conditions, ...)
+ * @return the error status
+ */
 
 int output_open_nl_lens_file(
                              struct harmonic * phr,
@@ -2822,186 +2816,6 @@ int output_open_nl_lens_file(
     
 }
 
-/**
- * This routine write one line with l and all \f$ C_l\f$'s for all types (TT, TE...)
- *
- * @param pba        Input: pointer to background structure (needed for \f$ T_{cmb}\f$)
- * @param phr        Input: pointer to harmonic structure
- * @param pop        Input: pointer to output structure
- * @param clfile  Input: file pointer
- * @param l       Input: multipole
- * @param cl      Input: \f$ C_l\f$'s for all types
- * @param ct_size Input: number of types
- * @return the error status
- */
-
-int output_one_line_of_cl(
-                          struct background * pba,
-                          struct harmonic * phr,
-                          struct output * pop,
-                          FILE * clfile,
-                          double l,
-                          double * cl, /* array with argument cl[index_ct] */
-                          int ct_size
-                          ) {
-    int index_ct, index_ct_rest;
-    double factor;
-    
-    factor = l*(l+1)/2./_PI_;
-    
-    fprintf(clfile," ");
-    
-    if (0==1){
-        class_fprintf_int(clfile, (int)l, _TRUE_);
-    }
-    else{
-        fprintf(clfile,"%4d ",(int)l);
-    }
-    
-    if (pop->output_format == class_format) {
-        
-        for (index_ct=0; index_ct < ct_size; index_ct++) {
-            class_fprintf_double(clfile, factor*cl[index_ct], _TRUE_);
-        }
-        fprintf(clfile,"\n");
-    }
-    
-    if (pop->output_format == camb_format) {
-        class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_tt], phr->has_tt);
-        class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_ee], phr->has_ee);
-        class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_bb], phr->has_bb);
-        class_fprintf_double(clfile, factor*pow(pba->T_cmb*1.e6,2)*cl[phr->index_ct_te], phr->has_te);
-        class_fprintf_double(clfile, l*(l+1)*factor*cl[phr->index_ct_pp], phr->has_pp);
-        class_fprintf_double(clfile, sqrt(l*(l+1))*factor*pba->T_cmb*1.e6*cl[phr->index_ct_tp], phr->has_tp);
-        class_fprintf_double(clfile, sqrt(l*(l+1))*factor*pba->T_cmb*1.e6*cl[phr->index_ct_ep], phr->has_ep);
-        index_ct_rest = 0;
-        if (phr->has_tt == _TRUE_)
-            index_ct_rest++;
-        if (phr->has_ee == _TRUE_)
-            index_ct_rest++;
-        if (phr->has_bb == _TRUE_)
-            index_ct_rest++;
-        if (phr->has_te == _TRUE_)
-            index_ct_rest++;
-        if (phr->has_pp == _TRUE_)
-            index_ct_rest++;
-        if (phr->has_tp == _TRUE_)
-            index_ct_rest++;
-        if (phr->has_ep == _TRUE_)
-            index_ct_rest++;
-        /* Now print the remaining (if any) entries:*/
-        for (index_ct=index_ct_rest; index_ct < ct_size; index_ct++) {
-            class_fprintf_double(clfile, factor*cl[index_ct], _TRUE_);
-        }
-        
-        fprintf(clfile,"\n");
-        
-    }
-    return _SUCCESS_;
-    
-}
-
-
-/** DLM
- * This routine write one line with l and all \f$ N_l\f$'s (lensing reconstruction noise spectra) for all types (TT, TE...)
- *
- * @param pba        Input: pointer to background structure (needed for \f$ T_{cmb}\f$)
- * @param phr        Input: pointer to harmonic structure
- * @param pop        Input: pointer to output structure
- * @param nlfile  Input: file pointer
- * @param l       Input: multipole
- * @param nl      Input: \f$ N_l\f$'s for all types
- * @param nlt_size Input: number of types
- * @return the error status
- */
-
-int output_one_line_of_nl(/* NOISE FILE */
-                          struct background * pba,
-                          struct harmonic * phr,
-                          struct output * pop,
-                          FILE * clfile,
-                          double l,
-                          double * nl, /* array with argument cl[index_ct] */
-                          int nlt_size
-                          ) {
-    int index_ct, index_ct_rest;
-    double factor;
-    
-    factor = l*(l+1)/2./_PI_;
-    
-    fprintf(clfile," ");
-    
-    if (0==1){
-        class_fprintf_int(clfile, (int)l, _TRUE_);
-    }
-    else{
-        fprintf(clfile,"%4d ",(int)l);
-    }
-    
-    for (index_ct=0; index_ct < nlt_size; index_ct++) {
-        class_fprintf_double(clfile, factor*nl[index_ct], _TRUE_);
-    }
-    fprintf(clfile,"\n");
-    
-    return _SUCCESS_;
-    
-}
-
-/**
- * This routine opens one file where some P(k)'s will be written, and writes
- * a heading with some general information concerning its content.
- *
- * @param pba        Input: pointer to background structure (needed for h)
- * @param pfo        Input: pointer to fourier structure
- * @param pop        Input: pointer to output structure
- * @param pkfile     Output: returned pointer to file pointer
- * @param filename   Input: name of the file
- * @param first_line Input: text describing the content (initial conditions, ...)
- * @param z          Input: redshift of the output
- * @return the error status
- */
-
-int output_open_pk_file(
-                        struct background * pba,
-                        struct fourier * pfo,
-                        struct output * pop,
-                        FILE * * pkfile,
-                        FileName filename,
-                        char * first_line,
-                        double z
-                        ) {
-    
-    int colnum = 1;
-    class_open(*pkfile,filename,"w",pop->error_message);
-    
-    if (pop->write_header == _TRUE_) {
-        fprintf(*pkfile,"# Matter power spectrum P(k) %sat redshift z=%g\n",first_line,z);
-        fprintf(*pkfile,"# for k=%g to %g h/Mpc,\n",
-                exp(pfo->ln_k[0])/pba->h,
-                exp(pfo->ln_k[pfo->k_size-1])/pba->h);
-        fprintf(*pkfile,"# number of wavenumbers equal to %d\n",pfo->k_size);
-        
-        fprintf(*pkfile,"#");
-        class_fprintf_columntitle(*pkfile,"k (h/Mpc)",_TRUE_,colnum);
-        class_fprintf_columntitle(*pkfile,"P (Mpc/h)^3",_TRUE_,colnum);
-        
-        fprintf(*pkfile,"\n");
-    }
-    
-    return _SUCCESS_;
-}
-
-
-/**  DLM
- * This routine opens one file where temperature and polarization noise will be written, and writes
- * a heading with some general information concerning its content.
- *
- * @param ple        Lensing: getting the maximum multipole number
- * @param filename   Input: name of the file
- * @param first_line Input: text describing the content (initial conditions, ...)
- * @return the error status
- */
-
 int output_open_nl_tp_file(
                            struct output * pop,
                            struct lensing * ple,
@@ -3044,32 +2858,6 @@ int output_open_cl_derv_file(
     }
     
     return _SUCCESS_;
-}
-
-
-
-/**
- * This routine writes one line with k and P(k)
- *
- * @param pkfile  Input: file pointer
- * @param one_k   Input: wavenumber
- * @param one_pk  Input: matter power spectrum
- * @return the error status
- */
-
-int output_one_line_of_pk(
-                          FILE * pkfile,
-                          double one_k,
-                          double one_pk
-                          ) {
-    
-    fprintf(pkfile," ");
-    class_fprintf_double(pkfile,one_k,_TRUE_);
-    class_fprintf_double(pkfile,one_pk,_TRUE_);
-    fprintf(pkfile,"\n");
-    
-    return _SUCCESS_;
-    
 }
 
 /** DLM
