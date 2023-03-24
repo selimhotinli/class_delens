@@ -788,6 +788,7 @@ int lensing_init(
         /* Integrate correlation function difference on [0,pi/16] */
         num_mu = (ple->l_unlensed_max * 2 )/16;
     }
+
     //    printf("DEBUG: num_mu = %d \n",num_mu);
     /** - allocate array of \f$ \mu \f$ values, as well as quadrature weights */
     
