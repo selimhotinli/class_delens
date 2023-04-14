@@ -5330,6 +5330,12 @@ int input_read_parameters_lensing(struct file_content * pfc,
 
 						ple->command_for_lens_recon_noise_spec = (char *) malloc (strlen(string1) + 1);
 						strcpy(ple->command_for_lens_recon_noise_spec, string1);
+                        
+                        // JRM: Added 4-14-2023 to avoid bug in power spectrum derivatives
+                        if (ple->has_itr_delensing = _TRUE_) {
+                            fprintf(stdout,"[WARNING: You requested iterative delensing and provided an external lensing reconstruction spectrum.  Delensing will be done with a single step rather than iteratively.]");
+                            ple->has_itr_delensing = _FALSE_; /* DLM */
+                        }
 
 					}
 				}
