@@ -1,7 +1,7 @@
 CLASS delens: Delensing module for the CLASS code 
 ==============================================
 
-Implementation of delensing procedure discussed in https://arxiv.org/abs/2111.15036: by authors [Selim C. Hotinli](mailto:shotinl1@jh.edu?subject=[GitHub]%20Source%20Han%20Sans), Joel Meyers, Cynthia Trendafilova, Daniel Green, Alex van Engelen
+Implementation of delensing procedure discussed in https://arxiv.org/abs/2111.15036: by authors [Selim C. Hotinli](mailto:shotinl1@jh.edu?subject=[GitHub]%20Source%20Han%20Sans), Joel Meyers, Cynthia Trendafilova, Daniel Green, Alex van Engelen. Modified by Joshua Ange to include early dark energy treatment from [class_ede](https://github.com/mwt5345/class_ede) (https://arxiv.org/abs/2003.07355).
 
 Code produces delensed CMB spectra (TT, TE, EE and BB) and lensing-reconstruction noise for given CMB experiment specifications and cosmology. 
 
