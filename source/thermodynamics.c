@@ -1760,7 +1760,8 @@ int thermodynamics_output_summary(
   printf(" -> baryon drag stops at z = %f\n",pth->z_d);
   printf("    corresponding to conformal time = %f Mpc\n",pth->tau_d);
   printf("    with comoving sound horizon rs = %f Mpc\n",pth->rs_d);
-  
+
+/*
   FILE* thermodynamics_file = fopen("output/class_generate_thermodynamics.txt", "w");
   fprintf(thermodynamics_file,"# -> recombination (maximum of visibility function) at z = %f\n",pth->z_rec);
   fprintf(thermodynamics_file,"#    corresponding to conformal time = %f Mpc\n",pth->tau_rec);
@@ -1792,6 +1793,7 @@ int thermodynamics_output_summary(
   fprintf(thermodynamics_file,"%f\n",pth->tau_d);
   fprintf(thermodynamics_file,"%f\n",pth->rs_d);
   fclose(thermodynamics_file);
+*/
 
   switch (pth->reio_parametrization) {
 

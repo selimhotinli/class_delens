@@ -2087,6 +2087,46 @@ int output_thermodynamics(
   free(data);
   fclose(thermofile);
 
+  /* JRM 9-20-2023: */
+  FileName thermo_summary_filename;
+  FILE * thermodynamics_file;
+  
+  sprintf(thermo_summary_filename,"%s%s",pop->root,"thermodynamics_summary.dat");
+  class_open(thermodynamics_file,thermo_summary_filename,"w",pop->error_message);
+
+  fprintf(thermodynamics_file,"# -> recombination (maximum of visibility function) at z = %f\n",pth->z_rec);
+  fprintf(thermodynamics_file,"#    corresponding to conformal time = %f Mpc\n",pth->tau_rec);
+  fprintf(thermodynamics_file,"#    with comoving sound horizon = %f Mpc\n",pth->rs_rec);
+  fprintf(thermodynamics_file,"#    angular diameter distance = %f Mpc\n",pth->da_rec);
+  fprintf(thermodynamics_file,"#    sound horizon angle 100*theta_s = %f\n",100.*pth->rs_rec/pth->ra_rec);
+  if (pth->compute_damping_scale == _TRUE_) {
+    fprintf(thermodynamics_file,"#    comoving photon damping scale = %f Mpc\n",pth->rd_rec);
+    fprintf(thermodynamics_file,"#    comoving damping wavenumber k_d = %f 1/Mpc\n",2.*_PI_/pth->rd_rec);
+  }
+  fprintf(thermodynamics_file,"#    Thomson optical depth crosses one at z_* = %f\n",pth->z_star);
+  fprintf(thermodynamics_file,"#    giving an angle 100*theta_* = %f\n",100.*pth->rs_star/pth->ra_star);
+  fprintf(thermodynamics_file,"# -> baryon drag stops at z = %f\n",pth->z_d);
+  fprintf(thermodynamics_file,"#    corresponding to conformal time = %f Mpc\n",pth->tau_d);
+  fprintf(thermodynamics_file,"#    with comoving sound horizon rs = %f Mpc\n\n",pth->rs_d);
+  
+  fprintf(thermodynamics_file,"%f\n",pth->z_rec);
+  fprintf(thermodynamics_file,"%f\n",pth->tau_rec);
+  fprintf(thermodynamics_file,"%f\n",pth->rs_rec);
+  fprintf(thermodynamics_file,"%f\n",pth->da_rec);
+  fprintf(thermodynamics_file,"%f\n",100.*pth->rs_rec/pth->ra_rec);
+  if (pth->compute_damping_scale == _TRUE_) {
+    fprintf(thermodynamics_file,"%f\n",pth->rd_rec);
+    fprintf(thermodynamics_file,"%f\n",2.*_PI_/pth->rd_rec);
+  }
+  fprintf(thermodynamics_file,"%f\n",pth->z_star);
+  fprintf(thermodynamics_file,"%f\n",100.*pth->rs_star/pth->ra_star);
+  fprintf(thermodynamics_file,"%f\n",pth->z_d);
+  fprintf(thermodynamics_file,"%f\n",pth->tau_d);
+  fprintf(thermodynamics_file,"%f\n",pth->rs_d);
+  
+  fclose(thermodynamics_file);
+  
+
   return _SUCCESS_;
 
 }
