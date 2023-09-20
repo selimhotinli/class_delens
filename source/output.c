@@ -57,7 +57,6 @@ int output_total_cl_at_l(
     }
     
     return _SUCCESS_;
-    
 }
 
 /**
@@ -103,10 +102,6 @@ int output_init(
             printf("Writing output files in %s... \n",pop->root);
     }
     
-//     printf("we are now output.c 7\n");
-//     printf("we are now output.c 7\n");
-//     printf("we are now output.c 7\n");
-    
     /** - deal with all anisotropy power spectra \f$ C_l\f$'s */
     
     if (ppt->has_cls == _TRUE_) {
@@ -115,11 +110,6 @@ int output_init(
                    pop->error_message,
                    pop->error_message);
     }
-    
-//     printf("we are now output.c 8\n");
-//     printf("we are now output.c 8\n");
-//     printf("we are now output.c 8\n");
-    
     
     /** - deal with all Fourier matter power spectra P(k)'s */
     
@@ -336,9 +326,6 @@ int output_cl(
                     pop->error_message);
         
     }
-//     printf("we are inside output.c inside 1 \n");
-//     printf("we are inside output.c inside 1 \n");
-//     printf("we are inside output.c inside 1 \n");
     
     //   /** - second, open only the relevant files, and write a heading in each of them */
     
@@ -365,10 +352,6 @@ int output_cl(
     class_alloc(nl_tot_dl,
                 ple->nlt_size*sizeof(double),
                 pop->error_message); /* DLM */
-    
-    //   printf('we are inside output.c inside 2');
-    //   printf('we are inside output.c inside 2');
-    //   printf('we are inside output.c inside 2');
     
     if (ple->has_lensed_cls == _TRUE_) {
         
@@ -431,13 +414,11 @@ int output_cl(
                    pop->error_message); /* DLM */
     }
     
-    
     if (ple->calculate_pderivaties == _TRUE_ && ple->output_derivatives == _TRUE_) { /* DLM */
         
         if (ple->derv_type == delensed) {strcpy(derv_type_string, "delensed");}
         if (ple->derv_type == lensed) {strcpy(derv_type_string, "lensed");}
         
-        /* sprintf(file_name,"%s%s",pop->root,"dClTTdCldd_delensed.dat"); /* DLM */
         sprintf(file_name,"%s%s%s%s",pop->root,"dClTTdCldd_", derv_type_string, ".dat");
         
         class_call(output_open_cl_derv_file(pop,
@@ -478,7 +459,6 @@ int output_cl(
             }
         }
         
-        /* sprintf(file_name,"%s%s",pop->root,"dClTEdCldd_delensed.dat"); /* DLM */
         sprintf(file_name,"%s%s%s%s",pop->root,"dClTEdCldd_", derv_type_string, ".dat");
         
         class_call(output_open_cl_derv_file(pop,
@@ -518,7 +498,6 @@ int output_cl(
                 
             }
         }
-        /* sprintf(file_name,"%s%s",pop->root,"dClEEdCldd_delensed.dat"); /* DLM */
         sprintf(file_name,"%s%s%s%s",pop->root,"dClEEdCldd_", derv_type_string, ".dat");
         
         class_call(output_open_cl_derv_file(pop,
@@ -1605,16 +1584,151 @@ int output_pk(
                     pfo->ic_ic_size*sizeof(FILE *),
                     pop->error_message);
     }
-    
+
     /** - loop over pk type (_cb, _m) */
     
     for (index_pk=0; index_pk<pfo->pk_size; index_pk++) {
-        
+
         if ((pfo->has_pk_m == _TRUE_) && (index_pk == pfo->index_pk_m)) {
             if (pk_output == pk_linear)
-                sprintf(type_suffix,"pk");
+            sprintf(type_suffix,"pk");
             else
-                sprintf(type_suffix,"pk_nl");
+            sprintf(type_suffix,"pk_nl");
+            }
+        if ((pfo->has_pk_cb == _TRUE_) && (index_pk == pfo->index_pk_cb)) {
+        if (pk_output == pk_linear)
+        sprintf(type_suffix,"pk_cb");
+        else
+        sprintf(type_suffix,"pk_cb_nl");
+    }
+      
+    /** - loop over z */
+
+    for (index_z = 0; index_z < pop->z_pk_num; index_z++) {
+
+      /** - first, check that requested redshift z_pk is consistent */
+
+      class_test((pop->z_pk[index_z] > ppt->z_max_pk),
+                 pop->error_message,
+                 "P(k,z) computed up to z=%f but requested at z=%f. Must increase z_max_pk in precision file.",ppt->z_max_pk,pop->z_pk[index_z]);
+
+      if (pop->z_pk_num == 1)
+        redshift_suffix[0]='\0';
+      else
+        sprintf(redshift_suffix,"z%d_",index_z+1);
+
+      /** - second, open only the relevant files and write a header in each of them */
+
+      sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,".dat");
+
+      class_call(output_open_pk_file(pba,
+                                     pfo,
+                                     pop,
+                                     &out_pk,
+                                     file_name,
+                                     "",
+                                     pop->z_pk[index_z]
+                                     ),
+                 pop->error_message,
+                 pop->error_message);
+
+      if (do_ic == _TRUE_) {
+
+        for (index_ic1 = 0; index_ic1 < pfo->ic_size; index_ic1++) {
+
+          for (index_ic2 = index_ic1; index_ic2 < pfo->ic_size; index_ic2++) {
+
+            if ((ppt->has_ad == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_ad)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad.dat");
+              strcpy(first_line,"for adiabatic (AD) mode ");
+            }
+
+            if ((ppt->has_bi == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_bi)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi.dat");
+              strcpy(first_line,"for baryon isocurvature (BI) mode ");
+            }
+
+            if ((ppt->has_cdi == _TRUE_) && (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_cdi)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_cdi.dat");
+              strcpy(first_line,"for CDM isocurvature (CDI) mode ");
+            }
+
+            if ((ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_nid)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_nid.dat");
+              strcpy(first_line,"for neutrino density isocurvature (NID) mode ");
+            }
+
+            if ((ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_niv) && (index_ic2 == ppt->index_ic_niv)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_niv.dat");
+              strcpy(first_line,"for neutrino velocity isocurvature (NIV) mode ");
+            }
+
+            if ((ppt->has_ad == _TRUE_) && (ppt->has_bi == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_bi)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_bi.dat");
+              strcpy(first_line,"for cross ADxBI mode ");
+            }
+
+            if ((ppt->has_ad == _TRUE_) && (ppt->has_cdi == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_cdi)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_cdi.dat");
+              strcpy(first_line,"for cross ADxCDI mode ");
+            }
+
+            if ((ppt->has_ad == _TRUE_) && (ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_nid)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_nid.dat");
+              strcpy(first_line,"for scalar cross ADxNID mode ");
+            }
+
+            if ((ppt->has_ad == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_niv)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_niv.dat");
+              strcpy(first_line,"for cross ADxNIV mode ");
+            }
+
+            if ((ppt->has_bi == _TRUE_) && (ppt->has_cdi == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_cdi)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi_cdi.dat");
+              strcpy(first_line,"for cross BIxCDI mode ");
+            }
+
+            if ((ppt->has_bi == _TRUE_) && (ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_nid)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi_nid.dat");
+              strcpy(first_line,"for cross BIxNID mode ");
+            }
+
+            if ((ppt->has_bi == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_niv)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi_niv.dat");
+              strcpy(first_line,"for cross BIxNIV mode ");
+            }
+
+            if ((ppt->has_cdi == _TRUE_) && (ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_nid)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_cdi_nid.dat");
+              strcpy(first_line,"for cross CDIxNID mode ");
+            }
+
+            if ((ppt->has_cdi == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_niv)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_cdi_niv.dat");
+              strcpy(first_line,"for cross CDIxNIV mode ");
+            }
+
+            if ((ppt->has_nid == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_niv)) {
+              sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_nid_niv.dat");
+              strcpy(first_line,"for cross NIDxNIV mode ");
+            }
+
+            index_ic1_ic2 = index_symmetric_matrix(index_ic1,index_ic2,pfo->ic_size);
+
+            if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
+
+              class_call(output_open_pk_file(pba,
+                                             pfo,
+                                             pop,
+                                             &(out_pk_ic[index_ic1_ic2]),
+                                             file_name,
+                                             first_line,
+                                             pop->z_pk[index_z]
+                                             ),
+                         pop->error_message,
+                         pop->error_message);
+            }
+          }
         }
       }
 
@@ -1633,7 +1747,7 @@ int output_pk(
                  pop->error_message);
 
       /** - fourth, write in files */
-
+      
       for (index_k=0; index_k<pfo->k_size; index_k++) {
 
         class_call(output_one_line_of_pk(out_pk,
@@ -1658,213 +1772,30 @@ int output_pk(
           }
         }
       } /* end loop over k */
-
-      /** - fifth, close files */
-
-      fclose(out_pk);
-
-      if (do_ic == _TRUE_) {
+            
+    /** - fifth, close files */
+            
+    fclose(out_pk);
+            
+    if (do_ic == _TRUE_) {
         for (index_ic1_ic2 = 0; index_ic1_ic2 < pfo->ic_ic_size; index_ic1_ic2++) {
-          if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
-            fclose(out_pk_ic[index_ic1_ic2]);
-          }
+            if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
+                fclose(out_pk_ic[index_ic1_ic2]);
+                }
+            }
         }
-        
-        /** - loop over z */
-        
-        for (index_z = 0; index_z < pop->z_pk_num; index_z++) {
-            
-            /** - first, check that requested redshift z_pk is consistent */
-            
-            class_test((pop->z_pk[index_z] > ppt->z_max_pk),
-                       pop->error_message,
-                       "P(k,z) computed up to z=%f but requested at z=%f. Must increase z_max_pk in precision file.",ppt->z_max_pk,pop->z_pk[index_z]);
-            
-            if (pop->z_pk_num == 1)
-                redshift_suffix[0]='\0';
-            else
-                sprintf(redshift_suffix,"z%d_",index_z+1);
-            
-            /** - second, open only the relevant files and write a header in each of them */
-            
-            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,".dat");
-            
-            class_call(output_open_pk_file(pba,
-                                           pfo,
-                                           pop,
-                                           &out_pk,
-                                           file_name,
-                                           "",
-                                           pop->z_pk[index_z]
-                                           ),
-                       pop->error_message,
-                       pop->error_message);
-            
-            if (do_ic == _TRUE_) {
-                
-                for (index_ic1 = 0; index_ic1 < pfo->ic_size; index_ic1++) {
-                    
-                    for (index_ic2 = index_ic1; index_ic2 < pfo->ic_size; index_ic2++) {
-                        
-                        if ((ppt->has_ad == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_ad)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad.dat");
-                            strcpy(first_line,"for adiabatic (AD) mode ");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_bi)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi.dat");
-                            strcpy(first_line,"for baryon isocurvature (BI) mode ");
-                        }
-                        
-                        if ((ppt->has_cdi == _TRUE_) && (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_cdi)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_cdi.dat");
-                            strcpy(first_line,"for CDM isocurvature (CDI) mode ");
-                        }
-                        
-                        if ((ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_nid)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_nid.dat");
-                            strcpy(first_line,"for neutrino density isocurvature (NID) mode ");
-                        }
-                        
-                        if ((ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_niv) && (index_ic2 == ppt->index_ic_niv)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_niv.dat");
-                            strcpy(first_line,"for neutrino velocity isocurvature (NIV) mode ");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) && (ppt->has_bi == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_bi)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_bi.dat");
-                            strcpy(first_line,"for cross ADxBI mode ");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) && (ppt->has_cdi == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_cdi)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_cdi.dat");
-                            strcpy(first_line,"for cross ADxCDI mode ");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) && (ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_nid)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_nid.dat");
-                            strcpy(first_line,"for scalar cross ADxNID mode ");
-                        }
-                        
-                        if ((ppt->has_ad == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_ad) && (index_ic2 == ppt->index_ic_niv)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_ad_niv.dat");
-                            strcpy(first_line,"for cross ADxNIV mode ");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) && (ppt->has_cdi == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_cdi)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi_cdi.dat");
-                            strcpy(first_line,"for cross BIxCDI mode ");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) && (ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_nid)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi_nid.dat");
-                            strcpy(first_line,"for cross BIxNID mode ");
-                        }
-                        
-                        if ((ppt->has_bi == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_bi) && (index_ic2 == ppt->index_ic_niv)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_bi_niv.dat");
-                            strcpy(first_line,"for cross BIxNIV mode ");
-                        }
-                        
-                        if ((ppt->has_cdi == _TRUE_) && (ppt->has_nid == _TRUE_) && (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_nid)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_cdi_nid.dat");
-                            strcpy(first_line,"for cross CDIxNID mode ");
-                        }
-                        
-                        if ((ppt->has_cdi == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_cdi) && (index_ic2 == ppt->index_ic_niv)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_cdi_niv.dat");
-                            strcpy(first_line,"for cross CDIxNIV mode ");
-                        }
-                        
-                        if ((ppt->has_nid == _TRUE_) && (ppt->has_niv == _TRUE_) && (index_ic1 == ppt->index_ic_nid) && (index_ic2 == ppt->index_ic_niv)) {
-                            sprintf(file_name,"%s%s%s%s",pop->root,redshift_suffix,type_suffix,"_nid_niv.dat");
-                            strcpy(first_line,"for cross NIDxNIV mode ");
-                        }
-                        
-                        index_ic1_ic2 = index_symmetric_matrix(index_ic1,index_ic2,pfo->ic_size);
-                        
-                        if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
-                            
-                            class_call(output_open_pk_file(pba,
-                                                           pfo,
-                                                           pop,
-                                                           &(out_pk_ic[index_ic1_ic2]),
-                                                           file_name,
-                                                           first_line,
-                                                           pop->z_pk[index_z]
-                                                           ),
-                                       pop->error_message,
-                                       pop->error_message);
-                        }
-                    }
-                }
-            }
-            
-            /** - third, compute P(k) for each k */
-            
-            class_call(fourier_pk_at_z(pba,
-                                       pfo,
-                                       logarithmic,
-                                       pk_output,
-                                       pop->z_pk[index_z],
-                                       index_pk,
-                                       ln_pk,
-                                       ln_pk_ic
-                                       ),
-                       pfo->error_message,
-                       pop->error_message);
-            
-            /** - fourth, write in files */
-            
-            for (index_k=0; index_k<pfo->k_size; index_k++) {
-                
-                class_call(output_one_line_of_pk(out_pk,
-                                                 exp(pfo->ln_k[index_k])/pba->h,
-                                                 exp(ln_pk[index_k])*pow(pba->h,3)
-                                                 ),
-                           pop->error_message,
-                           pop->error_message);
-                
-                if (do_ic == _TRUE_) {
-                    
-                    for (index_ic1_ic2 = 0; index_ic1_ic2 < pfo->ic_ic_size; index_ic1_ic2++) {
-                        
-                        if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
-                            
-                            class_call(output_one_line_of_pk(out_pk_ic[index_ic1_ic2],
-                                                             exp(pfo->ln_k[index_k])/pba->h,
-                                                             exp(ln_pk_ic[index_k * pfo->ic_ic_size + index_ic1_ic2])*pow(pba->h,3)),
-                                       pop->error_message,
-                                       pop->error_message);
-                        }
-                    }
-                }
-            } /* end loop over k */
-            
-            /** - fifth, close files */
-            
-            fclose(out_pk);
-            
-            if (do_ic == _TRUE_) {
-                for (index_ic1_ic2 = 0; index_ic1_ic2 < pfo->ic_ic_size; index_ic1_ic2++) {
-                    if (pfo->is_non_zero[index_ic1_ic2] == _TRUE_) {
-                        fclose(out_pk_ic[index_ic1_ic2]);
-                    }
-                }
-            }
-            
-        } /* end loop over index_z */
+    } /* end loop over index_z */
         
     } /* end loop over index_pk */
     
-    /* free arrays and pointers */
-    free(ln_pk);
-    if (pk_output == pk_linear) {
-        free(ln_pk_ic);
-        free(out_pk_ic);
-    }
-    
-    return _SUCCESS_;
+  /* free arrays and pointers */
+  free(ln_pk);
+  if (pk_output == pk_linear) {
+    free(ln_pk_ic);
+    free(out_pk_ic);
+  }
+
+  return _SUCCESS_;
 }
 
 /**
@@ -1942,7 +1873,7 @@ int output_tk(
 
     /** - second, open only the relevant files, and write a heading in each of them */
 
-    class_call(perturbations_output_data(pba,
+    class_call(perturbations_output_data_at_z(pba,
                                          ppt,
                                          pop->output_format,
                                          pop->z_pk[index_z],
@@ -1973,7 +1904,7 @@ int output_tk(
         
         /** - second, open only the relevant files, and write a heading in each of them */
         
-        class_call(perturbations_output_data(pba,
+        class_call(perturbations_output_data_at_z(pba,
                                              ppt,
                                              pop->output_format,
                                              pop->z_pk[index_z],
@@ -2034,8 +1965,8 @@ int output_tk(
             /** - free memory and close files */
             fclose(tkfile);
             
-        }
-        
+            }
+        }   
     }
     
     free(data);
@@ -2048,51 +1979,51 @@ int output_background(
                       struct background * pba,
                       struct output * pop
                       ) {
-    
-    FILE * backfile;
-    FileName file_name;
-    
-    char titles[_MAXTITLESTRINGLENGTH_]={0};
-    double * data;
-    int size_data, number_of_titles;
-    
-    class_call(background_output_titles(pba,titles),
-               pba->error_message,
-               pop->error_message);
-    number_of_titles = get_number_of_titles(titles);
-    size_data = number_of_titles*pba->bt_size;
-    class_alloc(data,sizeof(double)*size_data,pop->error_message);
-    class_call(background_output_data(pba,
-                                      number_of_titles,
-                                      data),
-               pba->error_message,
-               pop->error_message);
-    
-    sprintf(file_name,"%s%s",pop->root,"background.dat");
-    class_open(backfile,file_name,"w",pop->error_message);
-    
-    if (pop->write_header == _TRUE_) {
-        fprintf(backfile,"# Table of selected background quantities\n");
-        fprintf(backfile,"# All densities are multiplied by (8piG/3) (below, shortcut notation (.) for this factor) \n");
-        fprintf(backfile,"# Densities are in units [Mpc^-2] while all distances are in [Mpc]. \n");
-        if (pba->has_scf == _TRUE_){
-            fprintf(backfile,"# The units of phi, tau in the derivatives and the potential V are the following:\n");
-            fprintf(backfile,"# --> phi is given in units of the reduced Planck mass m_Pl = (8 pi G)^(-1/2)\n");
-            fprintf(backfile,"# --> tau in the derivative of V(phi) is given in units of Mpc.\n");
-            fprintf(backfile,"# --> the potential V(phi) is given in units of m_Pl^2/Mpc^2.\n");
-        }
+
+  FILE * backfile;
+  FileName file_name;
+
+  char titles[_MAXTITLESTRINGLENGTH_]={0};
+  double * data;
+  int size_data, number_of_titles;
+
+  class_call(background_output_titles(pba,titles),
+             pba->error_message,
+             pop->error_message);
+  number_of_titles = get_number_of_titles(titles);
+  size_data = number_of_titles*pba->bt_size;
+  class_alloc(data,sizeof(double)*size_data,pop->error_message);
+  class_call(background_output_data(pba,
+                                    number_of_titles,
+                                    data),
+             pba->error_message,
+             pop->error_message);
+
+  sprintf(file_name,"%s%s",pop->root,"background.dat");
+  class_open(backfile,file_name,"w",pop->error_message);
+
+  if (pop->write_header == _TRUE_) {
+    fprintf(backfile,"# Table of selected background quantities\n");
+    fprintf(backfile,"# All densities are multiplied by (8piG/3) (below, shortcut notation (.) for this factor) \n");
+    fprintf(backfile,"# Densities are in units [Mpc^-2] while all distances are in [Mpc]. \n");
+    if (pba->has_scf == _TRUE_){
+      fprintf(backfile,"# The units of phi, tau in the derivatives and the potential V are the following:\n");
+      fprintf(backfile,"# --> phi is given in units of the reduced Planck mass m_Pl = (8 pi G)^(-1/2)\n");
+      fprintf(backfile,"# --> tau in the derivative of V(phi) is given in units of Mpc.\n");
+      fprintf(backfile,"# --> the potential V(phi) is given in units of m_Pl^2/Mpc^2.\n");
     }
-    
-    output_print_data(backfile,
-                      titles,
-                      data,
-                      size_data);
-    
-    free(data);
-    fclose(backfile);
-    
-    return _SUCCESS_;
-    
+  }
+
+  output_print_data(backfile,
+                    titles,
+                    data,
+                    size_data);
+
+  free(data);
+  fclose(backfile);
+
+  return _SUCCESS_;
+
 }
 
 int output_thermodynamics(
@@ -2100,66 +2031,105 @@ int output_thermodynamics(
                           struct thermodynamics * pth,
                           struct output * pop
                           ) {
-    
-    FileName file_name;
-    FILE * thermofile;
-    char titles[_MAXTITLESTRINGLENGTH_]={0};
-    double * data;
-    int size_data, number_of_titles;
-    
-    class_call(thermodynamics_output_titles(pba,pth,titles),
-               pth->error_message,
-               pop->error_message);
-    number_of_titles = get_number_of_titles(titles);
-    size_data = number_of_titles*pth->tt_size;
-    class_alloc(data,sizeof(double)*size_data,pop->error_message);
-    class_call(thermodynamics_output_data(pba,
-                                          pth,
-                                          number_of_titles,
-                                          data),
-               pth->error_message,
-               pop->error_message);
-    
-    sprintf(file_name,"%s%s",pop->root,"thermodynamics.dat");
-    class_open(thermofile,file_name,"w",pop->error_message);
-    
-    if (pop->write_header == _TRUE_) {
-        fprintf(thermofile,"# Table of selected thermodynamics quantities\n");
-        fprintf(thermofile,"# The following notation is used in column titles:\n");
-        fprintf(thermofile,"#         x_e = electron ionization fraction\n");
-        fprintf(thermofile,"#      -kappa = optical depth\n");
-        fprintf(thermofile,"#      kappa' = Thomson scattering rate, prime denotes conformal time derivatives\n");
-        fprintf(thermofile,"#           g = kappa' e^-kappa = visibility function \n");
-        fprintf(thermofile,"#          Tb = baryon temperature \n");
-        fprintf(thermofile,"#         w_b = baryon equation of state parameter \n");
-        fprintf(thermofile,"#       c_b^2 = baryon sound speed squared \n");
-        fprintf(thermofile,"#       tau_d = baryon drag optical depth \n");
-        if (pth->compute_damping_scale == _TRUE_)
-            fprintf(thermofile,"#         r_d = approximate comoving value of photon damping scale \n");
-        if(pba->has_idm_dr == _TRUE_) {
-            fprintf(thermofile,"#  dmu_idm_dr = scattering rate of idr with idm_dr (i.e. idr opacity to idm_dr scattering) (units 1/Mpc)\n");
-            fprintf(thermofile,"# ddmu_idm_dr = derivative of this rate\n");
-            fprintf(thermofile,"#  tau_idm_dr = optical depth of idm_dr (due to interactions with idr) \n");
-            fprintf(thermofile,"#     tau_idr = optical depth of idr (due to self-interactions) \n");
-            fprintf(thermofile,"#    g_idm_dr = visibility function of idm_idr \n");
-            fprintf(thermofile,"#  c_idm_dr^2 = interacting dark matter squared sound speed \n");
-            fprintf(thermofile,"#    T_idm_dr = temperature of DM interacting with DR \n");
-            fprintf(thermofile,"#     dmu_idr = idr self-interaction rate \n");
-        }
-    }
-    
-    output_print_data(thermofile,
-                      titles,
-                      data,
-                      size_data);
-    
-    free(data);
-    fclose(thermofile);
-    
-    return _SUCCESS_;
-    
-}
 
+  FileName file_name;
+  FILE * thermofile;
+  char titles[_MAXTITLESTRINGLENGTH_]={0};
+  double * data;
+  int size_data, number_of_titles;
+
+  class_call(thermodynamics_output_titles(pba,pth,titles),
+             pth->error_message,
+             pop->error_message);
+  number_of_titles = get_number_of_titles(titles);
+  size_data = number_of_titles*pth->tt_size;
+  class_alloc(data,sizeof(double)*size_data,pop->error_message);
+  class_call(thermodynamics_output_data(pba,
+                                        pth,
+                                        number_of_titles,
+                                        data),
+             pth->error_message,
+             pop->error_message);
+
+  sprintf(file_name,"%s%s",pop->root,"thermodynamics.dat");
+  class_open(thermofile,file_name,"w",pop->error_message);
+
+  if (pop->write_header == _TRUE_) {
+    fprintf(thermofile,"# Table of selected thermodynamics quantities\n");
+    fprintf(thermofile,"# The following notation is used in column titles:\n");
+    fprintf(thermofile,"#         x_e = electron ionization fraction\n");
+    fprintf(thermofile,"#      -kappa = optical depth\n");
+    fprintf(thermofile,"#      kappa' = Thomson scattering rate, prime denotes conformal time derivatives\n");
+    fprintf(thermofile,"#           g = kappa' e^-kappa = visibility function \n");
+    fprintf(thermofile,"#          Tb = baryon temperature \n");
+    fprintf(thermofile,"#         w_b = baryon equation of state parameter \n");
+    fprintf(thermofile,"#       c_b^2 = baryon sound speed squared \n");
+    fprintf(thermofile,"#       tau_d = baryon drag optical depth \n");
+    if (pth->compute_damping_scale == _TRUE_)
+      fprintf(thermofile,"#         r_d = approximate comoving value of photon damping scale \n");
+    if (pth->has_idm_dr == _TRUE_) {
+      fprintf(thermofile,"#  dmu_idm_dr = scattering rate of idr with idm_dr (i.e. idr opacity to idm_dr scattering) (units 1/Mpc)\n");
+      fprintf(thermofile,"# ddmu_idm_dr = derivative of this rate\n");
+      fprintf(thermofile,"#  tau_idm_dr = optical depth of idm_dr (due to interactions with idr) \n");
+      fprintf(thermofile,"#     tau_idr = optical depth of idr (due to self-interactions) \n");
+      fprintf(thermofile,"#    g_idm_dr = visibility function of idm_idr \n");
+      fprintf(thermofile,"#  c_idm_dr^2 = interacting dark matter squared sound speed \n");
+      fprintf(thermofile,"#    T_idm_dr = temperature of DM interacting with DR \n");
+      fprintf(thermofile,"#     dmu_idr = idr self-interaction rate \n");
+    }
+  }
+
+  output_print_data(thermofile,
+                    titles,
+                    data,
+                    size_data);
+
+  free(data);
+  fclose(thermofile);
+
+  /* JRM 9-20-2023: */
+  FileName thermo_summary_filename;
+  FILE * thermodynamics_file;
+  
+  sprintf(thermo_summary_filename,"%s%s",pop->root,"thermodynamics_summary.dat");
+  class_open(thermodynamics_file,thermo_summary_filename,"w",pop->error_message);
+
+  fprintf(thermodynamics_file,"# -> recombination (maximum of visibility function) at z = %f\n",pth->z_rec);
+  fprintf(thermodynamics_file,"#    corresponding to conformal time = %f Mpc\n",pth->tau_rec);
+  fprintf(thermodynamics_file,"#    with comoving sound horizon = %f Mpc\n",pth->rs_rec);
+  fprintf(thermodynamics_file,"#    angular diameter distance = %f Mpc\n",pth->da_rec);
+  fprintf(thermodynamics_file,"#    sound horizon angle 100*theta_s = %f\n",100.*pth->rs_rec/pth->ra_rec);
+  if (pth->compute_damping_scale == _TRUE_) {
+    fprintf(thermodynamics_file,"#    comoving photon damping scale = %f Mpc\n",pth->rd_rec);
+    fprintf(thermodynamics_file,"#    comoving damping wavenumber k_d = %f 1/Mpc\n",2.*_PI_/pth->rd_rec);
+  }
+  fprintf(thermodynamics_file,"#    Thomson optical depth crosses one at z_* = %f\n",pth->z_star);
+  fprintf(thermodynamics_file,"#    giving an angle 100*theta_* = %f\n",100.*pth->rs_star/pth->ra_star);
+  fprintf(thermodynamics_file,"# -> baryon drag stops at z = %f\n",pth->z_d);
+  fprintf(thermodynamics_file,"#    corresponding to conformal time = %f Mpc\n",pth->tau_d);
+  fprintf(thermodynamics_file,"#    with comoving sound horizon rs = %f Mpc\n\n",pth->rs_d);
+  
+  fprintf(thermodynamics_file,"%f\n",pth->z_rec);
+  fprintf(thermodynamics_file,"%f\n",pth->tau_rec);
+  fprintf(thermodynamics_file,"%f\n",pth->rs_rec);
+  fprintf(thermodynamics_file,"%f\n",pth->da_rec);
+  fprintf(thermodynamics_file,"%f\n",100.*pth->rs_rec/pth->ra_rec);
+  if (pth->compute_damping_scale == _TRUE_) {
+    fprintf(thermodynamics_file,"%f\n",pth->rd_rec);
+    fprintf(thermodynamics_file,"%f\n",2.*_PI_/pth->rd_rec);
+  }
+  fprintf(thermodynamics_file,"%f\n",pth->z_star);
+  fprintf(thermodynamics_file,"%f\n",100.*pth->rs_star/pth->ra_star);
+  fprintf(thermodynamics_file,"%f\n",pth->z_d);
+  fprintf(thermodynamics_file,"%f\n",pth->tau_d);
+  fprintf(thermodynamics_file,"%f\n",pth->rs_d);
+  
+  fclose(thermodynamics_file);
+  
+
+  return _SUCCESS_;
+
+}
 
 int output_perturbations(
                          struct background * pba,
