@@ -96,6 +96,15 @@ also, dont forget to choose e.g. ```convergence_criterion_itr = 1e-4```.
 
 If ```lensing reconstruction noise spectra type = external```: Lensing-reconstruction noise is taken externally. In this case please define the path to the lensing-reconstruction noise with ```command_for_lensing_noise_spec  = cat /User/directory/to/Lensing/noise.txt```
 
+
+The following parameters can be used to select which multipoles will be included in the lensing reconstruction:
+```recon_mask_lmin_T```,
+```recon_mask_lmax_T```,
+```recon_mask_lmin_E```,
+```recon_mask_lmax_E```,
+```recon_mask_lmin_B```,
+```recon_mask_lmax_B```.
+
 <!-- Options on derivatives of the lensed or delensed spectra -->
 ## Options on derivatives of the lensed or delensed spectra
 
